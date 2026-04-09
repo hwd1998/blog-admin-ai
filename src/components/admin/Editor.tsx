@@ -8,12 +8,8 @@ import Placeholder from '@tiptap/extension-placeholder'
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
 import { common, createLowlight } from 'lowlight'
 import { useEffect, useCallback } from 'react'
+import { marked } from 'marked'
 import ImageUpload from './ImageUpload'
-
-// Markdown paste support (install: npm install @tiptap/extension-markdown)
-import Markdown from '@tiptap/extension-markdown'
-
-// Table support (install: npm install @tiptap/extension-table @tiptap/extension-table-row @tiptap/extension-table-cell @tiptap/extension-table-header)
 import Table from '@tiptap/extension-table'
 import TableRow from '@tiptap/extension-table-row'
 import TableCell from '@tiptap/extension-table-cell'
@@ -61,13 +57,6 @@ export default function Editor({ content, onChange }: EditorProps) {
       StarterKit.configure({
         codeBlock: false,
       }),
-      // Markdown paste support - allows pasting Markdown syntax
-      Markdown.configure({
-        html: true,
-        transformPastedText: true,
-        transformCopiedText: true,
-      }),
-      // Table support
       Table.configure({
         resizable: true,
       }),
@@ -112,6 +101,25 @@ export default function Editor({ content, onChange }: EditorProps) {
       editor.commands.setContent(content, false)
     }
   }, [content, editor])
+
+  // Markdown paste support
+  useEffect(() => {
+    if (!editor) return
+    const dom = editor.view.dom
+
+    const handlePaste = (e: ClipboardEvent) => {
+      const text = e.clipboardData?.getData('text/plain')
+      if (!text) return
+      const looksLikeMarkdown = /^#{1,6}\s|^\*\*[\s\S]+\*\*|^[-*+]\s|^\d+\.\s|^>\s|^```|^\|.+\|/.test(text.trimStart())
+      if (!looksLikeMarkdown) return
+      e.preventDefault()
+      const html = marked.parse(text) as string
+      editor.commands.insertContent(html)
+    }
+
+    dom.addEventListener('paste', handlePaste)
+    return () => dom.removeEventListener('paste', handlePaste)
+  }, [editor])
 
   const setLink = useCallback(() => {
     if (!editor) return
@@ -265,7 +273,7 @@ export default function Editor({ content, onChange }: EditorProps) {
         <span className="text-xs text-secondary">
           {editor.storage.characterCount?.characters?.() ?? editor.getText().length} characters
           {' · '}
-          Supports Markdown paste
+          支持粘贴 Markdown
         </span>
       </div>
     </div>

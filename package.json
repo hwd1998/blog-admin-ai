@@ -9,31 +9,36 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "next": "15.1.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "@supabase/supabase-js": "^2.47.0",
     "@supabase/ssr": "^0.5.2",
-    "@tiptap/react": "^2.10.4",
-    "@tiptap/starter-kit": "^2.10.4",
+    "@supabase/supabase-js": "^2.47.0",
+    "@tiptap/extension-code-block-lowlight": "^2.10.4",
     "@tiptap/extension-image": "^2.10.4",
     "@tiptap/extension-link": "^2.10.4",
     "@tiptap/extension-placeholder": "^2.10.4",
-    "@tiptap/extension-code-block-lowlight": "^2.10.4",
-    "lowlight": "^3.2.0",
+    "@tiptap/extension-table": "^2.27.2",
+    "@tiptap/extension-table-cell": "^2.27.2",
+    "@tiptap/extension-table-header": "^2.27.2",
+    "@tiptap/extension-table-row": "^2.27.2",
+    "@tiptap/react": "^2.10.4",
+    "@tiptap/starter-kit": "^2.10.4",
     "clsx": "^2.1.1",
-    "tailwind-merge": "^2.5.5",
-    "lucide-react": "^0.469.0"
+    "lowlight": "^3.2.0",
+    "lucide-react": "^0.469.0",
+    "marked": "^18.0.0",
+    "next": "15.1.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tailwind-merge": "^2.5.5"
   },
   "devDependencies": {
-    "typescript": "^5",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "tailwindcss": "^3.4.17",
-    "postcss": "^8",
     "autoprefixer": "^10.0.1",
     "eslint": "^8",
-    "eslint-config-next": "15.1.0"
+    "eslint-config-next": "15.1.0",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5"
   }
 }

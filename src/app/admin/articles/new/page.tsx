@@ -112,23 +112,23 @@ export default function NewArticlePage() {
 
     if (selectedCategories.length > 0) {
       insertPromises.push(
-        supabase.from('article_categories').insert(
+        Promise.resolve(supabase.from('article_categories').insert(
           selectedCategories.map((catId) => ({
             article_id: article.id,
             category_id: catId,
           }))
-        )
+        ))
       )
     }
 
     if (selectedTags.length > 0) {
       insertPromises.push(
-        supabase.from('article_tags').insert(
+        Promise.resolve(supabase.from('article_tags').insert(
           selectedTags.map((tagId) => ({
             article_id: article.id,
             tag_id: tagId,
           }))
-        )
+        ))
       )
     }
 

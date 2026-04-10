@@ -6,8 +6,8 @@ import { createClient } from '@/lib/supabase/client'
 interface MediaFile {
   name: string
   id: string
-  updated_at: string
-  created_at: string
+  updated_at: string | null
+  created_at: string | null
   metadata: {
     size: number
     mimetype: string
@@ -48,6 +48,7 @@ export default function AdminMediaPage() {
         const { data: urlData } = supabase.storage.from('media').getPublicUrl(f.name)
         return {
           ...f,
+          id: f.id ?? '',
           publicUrl: urlData.publicUrl,
           metadata: f.metadata ?? { size: 0, mimetype: 'unknown' },
         }

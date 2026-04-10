@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
+import { createStaticClient } from '@/lib/supabase/static'
 import ArticleCard from '@/components/c/ArticleCard'
 import type { Article, Category, Tag } from '@/types'
 
@@ -12,7 +13,7 @@ interface CategoryPageProps {
 }
 
 export async function generateStaticParams() {
-  const supabase = await createClient()
+  const supabase = createStaticClient()
   const { data: categories } = await supabase.from('categories').select('slug')
   return (categories ?? []).map((c) => ({ slug: c.slug }))
 }

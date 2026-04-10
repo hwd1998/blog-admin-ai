@@ -16,7 +16,7 @@ function getDisplayName(user: { email?: string | null; user_metadata?: Record<st
 
   if (metadataName && metadataName.trim()) return metadataName.trim()
   if (user.email) return user.email.split('@')[0]
-  return 'Reader'
+  return '读者'
 }
 
 export default function CommentForm({ articleId }: CommentFormProps) {
@@ -37,7 +37,7 @@ export default function CommentForm({ articleId }: CommentFormProps) {
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {
-      setError('You must be signed in to comment.')
+      setError('请先登录后再评论。')
       setSubmitting(false)
       return
     }
@@ -51,7 +51,7 @@ export default function CommentForm({ articleId }: CommentFormProps) {
     })
 
     if (insertError) {
-      setError('Failed to submit comment. Please try again.')
+      setError('评论提交失败，请稍后重试。')
       setSubmitting(false)
       return
     }
@@ -67,7 +67,7 @@ export default function CommentForm({ articleId }: CommentFormProps) {
       <div className="p-4 bg-surface-container border border-outline-variant">
         <div className="flex items-center gap-2 text-sm text-secondary">
           <span className="material-symbols-outlined text-[18px] text-primary">check_circle</span>
-          Your comment has been submitted and is awaiting approval.
+          评论已提交，正在等待审核。
         </div>
       </div>
     )
@@ -77,14 +77,14 @@ export default function CommentForm({ articleId }: CommentFormProps) {
     <form onSubmit={handleSubmit} className="space-y-3">
       <div>
         <label htmlFor="comment" className="block text-xs font-semibold tracking-widest uppercase text-secondary mb-2">
-          Your Comment
+          评论内容
         </label>
         <textarea
           id="comment"
           value={content}
           onChange={(e) => setContent(e.target.value)}
           rows={4}
-          placeholder="Share your thoughts..."
+          placeholder="写下你的想法…"
           required
           className="w-full px-4 py-3 bg-surface-container-lowest border border-outline-variant text-on-surface text-sm placeholder:text-secondary focus:outline-none focus:border-primary resize-none transition-colors"
         />
@@ -100,7 +100,7 @@ export default function CommentForm({ articleId }: CommentFormProps) {
           disabled={submitting || !content.trim()}
           className="px-6 py-2 bg-primary text-on-primary text-sm font-medium hover:bg-primary-container transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {submitting ? 'Submitting...' : 'Publish Comment'}
+          {submitting ? '提交中…' : '发布评论'}
         </button>
       </div>
     </form>

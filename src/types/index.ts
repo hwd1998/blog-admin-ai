@@ -13,12 +13,17 @@ export interface Tag {
   created_at: string
 }
 
+/** 文章正文存储格式，与数据库 articles.content_format 一致 */
+export type ArticleContentFormat = 'html' | 'markdown'
+
 export interface Article {
   id: string
   title: string
   slug: string
   summary: string | null
   content: string
+  /** 未迁移库字段时视为 html */
+  content_format?: ArticleContentFormat
   cover_image_url: string | null
   status: 'draft' | 'published'
   view_count: number

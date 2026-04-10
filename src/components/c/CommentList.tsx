@@ -18,7 +18,7 @@ export default async function CommentList({ articleId }: CommentListProps) {
   if (!comments || comments.length === 0) {
     return (
       <div className="py-6 text-center">
-        <p className="text-secondary text-sm">No comments yet. Be the first to share your thoughts.</p>
+        <p className="text-secondary text-sm">还没有评论，来抢沙发吧。</p>
       </div>
     )
   }
@@ -36,7 +36,7 @@ export default async function CommentList({ articleId }: CommentListProps) {
           <div className="flex-1">
             <div className="flex items-baseline gap-3 mb-1">
               <span className="text-sm font-medium text-on-surface">
-                {comment.author_name?.trim() || `Reader ${String(index + 1).padStart(2, '0')}`}
+                {comment.author_name?.trim() || `读者 ${String(index + 1).padStart(2, '0')}`}
               </span>
               <span className="font-mono text-xs text-secondary">
                 {formatDate(comment.created_at)}

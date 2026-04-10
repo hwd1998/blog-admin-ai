@@ -9,6 +9,7 @@ import CommentList from '@/components/c/CommentList'
 import CommentForm from '@/components/c/CommentForm'
 import LikeButton from '@/components/c/LikeButton'
 import { formatDate } from '@/lib/utils'
+import { articleBodyToDisplayHtml } from '@/lib/articleHtml'
 import type { Category, Tag } from '@/types'
 
 export const revalidate = 3600
@@ -28,7 +29,7 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
     .eq('status', 'published')
     .single()
 
-  if (!article) return { title: 'Article Not Found' }
+  if (!article) return { title: '文章未找到' }
 
   return {
     title: article.title,
@@ -82,11 +83,16 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
   // Increment view count (fire-and-forget)
   supabase.rpc('increment_view_count', { article_slug: slug }).then(() => {})
 
+  const displayHtml = articleBodyToDisplayHtml(
+    article.content,
+    article.content_format ?? 'html'
+  )
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-10">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-xs text-secondary mb-8 font-mono">
-        <Link href="/" className="hover:text-primary transition-colors">Home</Link>
+        <Link href="/" className="hover:text-primary transition-colors">首页</Link>
         <span className="text-outline-variant">/</span>
         {article.categories[0] && (
           <>
@@ -141,11 +147,11 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
               )}
               <span className="flex items-center gap-1 text-xs text-secondary">
                 <span className="material-symbols-outlined text-[14px]">visibility</span>
-                {article.view_count.toLocaleString()} views
+                {article.view_count.toLocaleString()} 次阅读
               </span>
               <span className="flex items-center gap-1 text-xs text-secondary">
                 <span className="material-symbols-outlined text-[14px]">favorite</span>
-                {likeCount ?? 0} likes
+                {likeCount ?? 0} 赞
               </span>
             </div>
           </header>
@@ -165,7 +171,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
           )}
 
           {/* Article content */}
-          <ArticleContent content={article.content} />
+          <ArticleContent content={displayHtml} />
 
           {/* Tags */}
           {article.tags.length > 0 && (
@@ -188,14 +194,14 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
           {/* Comments section */}
           <section className="mt-10 pt-8 border-t border-outline-variant">
             <h2 className="font-serif text-xl font-semibold mb-6">
-              Discussion
+              讨论
             </h2>
 
             <CommentList articleId={article.id} />
 
             <div className="mt-8">
               <h3 className="text-xs font-semibold tracking-widest uppercase text-secondary mb-4">
-                Leave a Comment
+                发表评论
               </h3>
               <CommentForm articleId={article.id} />
             </div>
@@ -203,7 +209,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
         </article>
 
         {/* TOC Sidebar */}
-        <TableOfContents content={article.content} />
+        <TableOfContents content={displayHtml} />
       </div>
     </div>
   )

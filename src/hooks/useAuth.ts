@@ -14,6 +14,7 @@ interface UseAuthReturn {
 export function useAuth(): UseAuthReturn {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
+  const [isAuthor, setIsAuthor] = useState(false)
   const supabase = createClient()
 
   useEffect(() => {
@@ -30,11 +31,28 @@ export function useAuth(): UseAuthReturn {
     return () => subscription.unsubscribe()
   }, [])
 
+  useEffect(() => {
+    if (!user) {
+      setIsAuthor(false)
+      return
+    }
+    let cancelled = false
+    fetch('/api/auth/is-author')
+      .then((res) => res.json())
+      .then((data: { isAuthor?: boolean }) => {
+        if (!cancelled) setIsAuthor(Boolean(data.isAuthor))
+      })
+      .catch(() => {
+        if (!cancelled) setIsAuthor(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [user])
+
   const signOut = async () => {
     await supabase.auth.signOut()
   }
-
-  const isAuthor = !!(user && process.env.NEXT_PUBLIC_AUTHOR_UID && user.id === process.env.NEXT_PUBLIC_AUTHOR_UID)
 
   return { user, loading, isAuthor, signOut }
 }

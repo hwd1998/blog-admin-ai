@@ -3,14 +3,14 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: {
-    default: 'The Curator',
-    template: '%s | The Curator',
+    default: 'HWD BLOG',
+    template: '%s | HWD BLOG',
   },
-  description: 'An editorial blog with a curated perspective on ideas, culture, and craft.',
+  description: '个人写作与随笔博客，记录想法、技术、文化与创作。',
   openGraph: {
     type: 'website',
-    locale: 'en_US',
-    siteName: 'The Curator',
+    locale: 'zh_CN',
+    siteName: 'HWD BLOG',
   },
 }
 
@@ -20,7 +20,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
+    <html lang="zh-CN">
       <body className="bg-surface text-on-surface antialiased">
         {children}
       </body>

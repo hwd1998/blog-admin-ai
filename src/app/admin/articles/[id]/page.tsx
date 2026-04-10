@@ -5,7 +5,8 @@ import { useRouter, useParams } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { createClient } from '@/lib/supabase/client'
 import ImageUpload from '@/components/admin/ImageUpload'
-import type { Category, Tag } from '@/types'
+import MarkdownEditor from '@/components/admin/MarkdownEditor'
+import type { ArticleContentFormat, Category, Tag } from '@/types'
 
 const Editor = dynamic(() => import('@/components/admin/Editor'), { ssr: false })
 
@@ -29,6 +30,8 @@ export default function EditArticlePage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [contentFormat, setContentFormat] = useState<ArticleContentFormat>('html')
+  const [editorRemountKey, setEditorRemountKey] = useState(0)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -46,6 +49,9 @@ export default function EditArticlePage() {
         setSlug(article.slug)
         setSummary(article.summary ?? '')
         setContent(article.content)
+        setContentFormat(
+          article.content_format === 'markdown' ? 'markdown' : 'html'
+        )
         setCoverImageUrl(article.cover_image_url ?? '')
         setStatus(article.status)
       }
@@ -86,6 +92,7 @@ export default function EditArticlePage() {
       slug: slug.trim(),
       summary: summary.trim() || null,
       content,
+      content_format: contentFormat,
       cover_image_url: coverImageUrl || null,
       status: saveStatus,
     }
@@ -130,6 +137,14 @@ export default function EditArticlePage() {
     setSaving(false)
     router.push('/admin/articles')
     router.refresh()
+  }
+
+  const selectContentFormat = (fmt: ArticleContentFormat) => {
+    if (fmt === contentFormat) return
+    setContentFormat(fmt)
+    if (fmt === 'html') {
+      setEditorRemountKey((k) => k + 1)
+    }
   }
 
   if (loading) {
@@ -204,8 +219,39 @@ export default function EditArticlePage() {
             />
           </div>
 
-          <div className="mt-4">
-            <Editor content={content} onChange={setContent} />
+          <div className="mt-4 space-y-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs font-semibold text-stone-500 uppercase tracking-wider">正文编辑</span>
+              <div className="inline-flex rounded border border-stone-200 overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => selectContentFormat('html')}
+                  className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                    contentFormat === 'html'
+                      ? 'bg-amber-500 text-white'
+                      : 'bg-white text-stone-600 hover:bg-stone-50'
+                  }`}
+                >
+                  富文本
+                </button>
+                <button
+                  type="button"
+                  onClick={() => selectContentFormat('markdown')}
+                  className={`px-3 py-1.5 text-xs font-medium transition-colors border-l border-stone-200 ${
+                    contentFormat === 'markdown'
+                      ? 'bg-amber-500 text-white border-amber-500'
+                      : 'bg-white text-stone-600 hover:bg-stone-50'
+                  }`}
+                >
+                  Markdown
+                </button>
+              </div>
+            </div>
+            {contentFormat === 'html' ? (
+              <Editor key={editorRemountKey} content={content} onChange={setContent} />
+            ) : (
+              <MarkdownEditor value={content} onChange={setContent} />
+            )}
           </div>
         </div>
 

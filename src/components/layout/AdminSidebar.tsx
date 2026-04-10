@@ -32,7 +32,7 @@ export default function AdminSidebar() {
     <aside className="fixed left-0 top-14 h-[calc(100vh-56px)] w-[220px] bg-[#1A1A1A] flex flex-col z-40">
       {/* Brand */}
       <div className="px-5 py-5 border-b border-stone-700">
-        <p className="text-xs font-medium text-stone-500 uppercase tracking-widest mb-1">The Curator</p>
+        <p className="text-xs font-medium text-stone-500 uppercase tracking-widest mb-1">HWD BLOG</p>
         <h2 className="text-amber-400 font-semibold text-base tracking-wide">管理后台</h2>
       </div>
 

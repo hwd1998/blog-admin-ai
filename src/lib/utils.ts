@@ -6,11 +6,11 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatDate(dateString: string): string {
-  return new Date(dateString).toLocaleDateString('en-US', {
-    month: 'short',
-    day: '2-digit',
+  return new Date(dateString).toLocaleDateString('zh-CN', {
     year: 'numeric',
-  }).toUpperCase()
+    month: 'long',
+    day: 'numeric',
+  })
 }
 
 export function slugify(text: string): string {

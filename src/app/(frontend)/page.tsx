@@ -138,17 +138,17 @@ export default async function HomePage({ searchParams }: HomePageProps) {
     <div className="max-w-6xl mx-auto px-4 py-10">
       {/* Bio / Header */}
       <section className="mb-10 pb-10 border-b border-outline-variant">
-        <div className="max-w-2xl">
+        <div className="w-full">
           <p className="text-xs font-semibold tracking-widest uppercase text-secondary mb-3">
-            Editorial Journal
+            个人博客
           </p>
           <h1 className="font-serif text-4xl font-semibold text-on-surface mb-4 leading-tight">
-            THE CURATOR
+            HWD BLOG
           </h1>
-          <p className="text-secondary text-base leading-relaxed">
-            A carefully curated collection of essays, observations, and reflections on culture,
-            craft, and ideas worth considering. Published when the moment calls for it.
+          <p className="text-secondary text-base leading-relaxed w-full">
+            随笔、观察与对文化、技艺与值得琢磨的想法的记录。不追更新频率，只在觉得该写的时候发布。
           </p>
+     
         </div>
       </section>
 
@@ -159,14 +159,14 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           {activeFilter && (
             <div className="mb-6 flex items-center gap-3">
               <span className="text-sm text-secondary">
-                Filtering by: <span className="font-medium text-on-surface">{activeFilter}</span>
+                当前筛选：<span className="font-medium text-on-surface">{activeFilter}</span>
               </span>
               <Link
                 href="/"
                 className="text-xs text-primary hover:underline flex items-center gap-1"
               >
                 <span className="material-symbols-outlined text-[14px]">close</span>
-                Clear
+                清除
               </Link>
             </div>
           )}
@@ -182,7 +182,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                     : 'border-outline-variant text-secondary hover:text-on-surface hover:border-outline'
                 }`}
               >
-                All
+                全部
               </Link>
               {(categories ?? []).map((cat) => (
                 <Link
@@ -203,7 +203,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           {/* Article list */}
           {articles.length === 0 ? (
             <div className="py-16 text-center">
-              <p className="text-secondary">No articles found.</p>
+              <p className="text-secondary">暂无文章。</p>
             </div>
           ) : (
             <div>
@@ -222,7 +222,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                   className="flex items-center gap-1 text-sm text-secondary hover:text-on-surface transition-colors"
                 >
                   <span className="material-symbols-outlined text-[18px]">arrow_back</span>
-                  Previous
+                  上一页
                 </Link>
               ) : (
                 <span />
@@ -237,7 +237,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                   href={buildUrl(page + 1)}
                   className="flex items-center gap-1 text-sm text-secondary hover:text-on-surface transition-colors"
                 >
-                  Next
+                  下一页
                   <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
                 </Link>
               ) : (
@@ -253,7 +253,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           {tags && tags.length > 0 && (
             <div className="mb-8">
               <p className="text-xs font-semibold tracking-widest uppercase text-secondary mb-3 pb-2 border-b border-outline-variant">
-                Topics
+                话题
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {tags.map((tag) => (
@@ -277,7 +277,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           {categories && categories.length > 0 && (
             <div>
               <p className="text-xs font-semibold tracking-widest uppercase text-secondary mb-3 pb-2 border-b border-outline-variant">
-                Categories
+                分类
               </p>
               <div className="space-y-1">
                 {categories.map((cat) => (

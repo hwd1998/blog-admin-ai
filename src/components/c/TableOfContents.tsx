@@ -98,7 +98,7 @@ export default function TableOfContents({ content }: TableOfContentsProps) {
     <aside className="sticky top-20 hidden xl:block w-56 shrink-0">
       <div className="border-l-2 border-outline-variant pl-4">
         <p className="text-xs font-semibold tracking-widest uppercase text-secondary mb-3">
-          Contents
+          目录
         </p>
         <nav className="space-y-1">
           {headings.map((heading, index) => (

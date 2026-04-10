@@ -26,10 +26,10 @@ export async function generateMetadata({ params }: TagPageProps): Promise<Metada
     .eq('slug', slug)
     .single()
 
-  if (!tag) return { title: 'Tag Not Found' }
+  if (!tag) return { title: '标签未找到' }
   return {
     title: `#${tag.name}`,
-    description: `Articles tagged with ${tag.name}`,
+    description: `标签「${tag.name}」下的文章`,
   }
 }
 
@@ -75,27 +75,27 @@ export default async function TagPage({ params }: TagPageProps) {
     <div className="max-w-4xl mx-auto px-4 py-10">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-xs text-secondary mb-8 font-mono">
-        <Link href="/" className="hover:text-primary transition-colors">Home</Link>
+        <Link href="/" className="hover:text-primary transition-colors">首页</Link>
         <span className="text-outline-variant">/</span>
-        <span className="text-on-surface">Tags</span>
+        <span className="text-on-surface">标签</span>
         <span className="text-outline-variant">/</span>
         <span className="text-on-surface">#{tag.name}</span>
       </nav>
 
       {/* Header */}
       <header className="mb-10 pb-8 border-b border-outline-variant">
-        <p className="text-xs font-semibold tracking-widest uppercase text-secondary mb-2">Tag</p>
+        <p className="text-xs font-semibold tracking-widest uppercase text-secondary mb-2">标签</p>
         <h1 className="font-serif text-3xl font-semibold text-on-surface mb-2">
           <span className="text-secondary">#</span>{tag.name}
         </h1>
         <p className="text-xs text-secondary font-mono">
-          {articles.length} {articles.length === 1 ? 'article' : 'articles'}
+          共 {articles.length} 篇
         </p>
       </header>
 
       {/* Articles */}
       {articles.length === 0 ? (
-        <p className="text-secondary text-center py-12">No articles with this tag yet.</p>
+        <p className="text-secondary text-center py-12">该标签下暂无文章。</p>
       ) : (
         <div>
           {articles.map((article) => (

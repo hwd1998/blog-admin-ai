@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 
 export const metadata: Metadata = {
-  title: 'About',
-  description: 'About The Curator — an editorial journal of ideas, culture, and craft.',
+  title: '关于',
+  description: '关于 HWD BLOG — 个人写作空间，记录想法、文化与创作。',
 }
 
 export default function AboutPage() {
@@ -11,66 +11,54 @@ export default function AboutPage() {
     <div className="max-w-3xl mx-auto px-4 py-14">
       {/* Nav */}
       <nav className="flex items-center gap-2 text-xs text-secondary mb-10 font-mono">
-        <Link href="/" className="hover:text-primary transition-colors">Home</Link>
+        <Link href="/" className="hover:text-primary transition-colors">首页</Link>
         <span className="text-outline-variant">/</span>
-        <span className="text-on-surface">About</span>
+        <span className="text-on-surface">关于</span>
       </nav>
 
       {/* Header */}
       <header className="mb-12 pb-10 border-b border-outline-variant">
         <p className="text-xs font-semibold tracking-widest uppercase text-secondary mb-3">
-          About
+          关于
         </p>
         <h1 className="font-serif text-4xl font-semibold text-on-surface leading-tight mb-4">
-          The Curator
+          HWD BLOG
         </h1>
         <p className="text-secondary text-lg leading-relaxed font-light">
-          An editorial journal dedicated to the careful selection of ideas worth writing about.
+          一个认真对待「写什么、怎么写」的个人写作空间。
         </p>
       </header>
 
       {/* Content */}
       <div className="prose-custom">
-        <h2>What Is This?</h2>
+        <h2>这是什么？</h2>
         <p>
-          The Curator is a personal writing project — a space for long-form essays, cultural
-          observations, and reflections on craft. Each piece is written with care and published
-          only when it feels ready.
+          HWD BLOG 是个人写作项目，用来放长文随笔、文化观察和对技艺、过程的思考。每篇都会认真写完，只在觉得可以见人时再发布。
         </p>
 
         <blockquote>
-          Curation is not collection. It is discernment applied at scale, the exercise of taste
-          in service of others.
+          策展不是囤积，而是在规模上运用判断力，用品味为他人服务。
         </blockquote>
 
-        <h2>The Editorial Approach</h2>
+        <h2>写作方式</h2>
         <p>
-          Rather than chasing publication frequency, this journal prizes depth over volume. A
-          single well-considered essay published monthly is worth more than daily notes that
-          dissipate into the feed.
+          不追求发稿频率，更看重深度而不是数量。一个月一篇想透的文章，胜过每天在信息流里消失的短句。
         </p>
         <p>
-          The topics vary — technology, culture, craft, process, books, ideas — but the
-          approach remains consistent: primary research, original thinking, and writing that
-          tries to say something true.
+          题目会变——技术、文化、技艺、流程、书、想法——但方法一致：尽量基于一手材料，有自己的判断，写自己相信为真的东西。
         </p>
 
-        <h2>On the Design</h2>
+        <h2>关于设计</h2>
         <p>
-          The design borrows from editorial print traditions: serif headlines, generous white
-          space, strong typographic hierarchy, and sharp corners. No decorative radius, no
-          gradient buttons. Legibility first.
+          视觉参考编辑排版传统：衬线标题、留白、清晰的字阶和直角。没有装饰性圆角和渐变按钮，阅读优先。
         </p>
         <p>
-          The palette draws from warm neutrals and amber — the color of old paper and morning
-          light through a window.
+          配色偏暖中性色与琥珀色，像旧纸和清晨窗边的光。
         </p>
 
-        <h2>Archives &amp; Reading</h2>
+        <h2>归档与阅读</h2>
         <p>
-          All published articles are available in the <Link href="/">archive</Link>. They are
-          organized by category and tagged by topic. Comments are welcome — thoughtful disagreement
-          especially so.
+          已发布的文章都在 <Link href="/">首页归档</Link> 中，可按分类浏览，也可按标签检索。欢迎评论，有理有据的不同意见尤其欢迎。
         </p>
       </div>
 
@@ -81,7 +69,7 @@ export default function AboutPage() {
           className="inline-flex items-center gap-2 text-sm text-secondary hover:text-primary transition-colors"
         >
           <span className="material-symbols-outlined text-[18px]">arrow_back</span>
-          Back to the archive
+          返回文章列表
         </Link>
       </div>
     </div>

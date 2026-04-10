@@ -17,22 +17,35 @@ export default function Navbar() {
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       setUser(user)
-      if (user && process.env.NEXT_PUBLIC_AUTHOR_UID) {
-        setIsAuthor(user.id === process.env.NEXT_PUBLIC_AUTHOR_UID)
-      }
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
-      if (session?.user && process.env.NEXT_PUBLIC_AUTHOR_UID) {
-        setIsAuthor(session.user.id === process.env.NEXT_PUBLIC_AUTHOR_UID)
-      } else {
-        setIsAuthor(false)
-      }
     })
 
     return () => subscription.unsubscribe()
   }, [])
+
+  useEffect(() => {
+    if (!user) {
+      setIsAuthor(false)
+      return
+    }
+
+    let cancelled = false
+    fetch('/api/auth/is-author')
+      .then((res) => res.json())
+      .then((data: { isAuthor?: boolean }) => {
+        if (!cancelled) setIsAuthor(Boolean(data.isAuthor))
+      })
+      .catch(() => {
+        if (!cancelled) setIsAuthor(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [user])
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
@@ -53,7 +66,7 @@ export default function Navbar() {
           href="/"
           className="font-serif italic text-xl font-semibold tracking-wide text-on-surface hover:text-primary transition-colors"
         >
-          THE CURATOR
+          HWD BLOG
         </Link>
 
         {/* Desktop Nav */}
@@ -107,7 +120,7 @@ export default function Navbar() {
         <button
           className="md:hidden p-2 text-secondary"
           onClick={() => setMenuOpen(!menuOpen)}
-          aria-label="Toggle menu"
+          aria-label="展开或收起菜单"
         >
           <span className="material-symbols-outlined text-xl">
             {menuOpen ? 'close' : 'menu'}

@@ -44,7 +44,7 @@ export default function LoginPage() {
         <div className="mb-8 text-center">
           <Link href="/" className="inline-block mb-6">
             <span className="font-serif italic text-2xl font-semibold text-on-surface">
-              THE CURATOR
+              HWD BLOG
             </span>
           </Link>
           <h1 className="font-serif text-2xl font-semibold text-on-surface mb-1">

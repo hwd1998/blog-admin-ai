@@ -103,7 +103,7 @@ export default function LikeButton({ articleId, initialLikeCount }: LikeButtonPr
     <div className="flex items-center gap-4 py-6 border-t border-outline-variant">
       <button
         onClick={toggleLike}
-        title={userId ? (liked ? 'Unlike' : 'Like') : 'Sign in to like'}
+        title={userId ? (liked ? '取消赞' : '点赞') : '登录后点赞'}
         disabled={!userId}
         className={`flex items-center gap-2 px-4 py-2 border text-sm font-medium transition-colors disabled:opacity-50 ${
           liked
@@ -119,7 +119,7 @@ export default function LikeButton({ articleId, initialLikeCount }: LikeButtonPr
 
       <button
         onClick={toggleFavorite}
-        title={userId ? (favorited ? 'Remove from favorites' : 'Add to favorites') : 'Sign in to save'}
+        title={userId ? (favorited ? '取消收藏' : '收藏') : '登录后收藏'}
         disabled={!userId}
         className={`flex items-center gap-2 px-4 py-2 border text-sm font-medium transition-colors disabled:opacity-50 ${
           favorited
@@ -130,12 +130,12 @@ export default function LikeButton({ articleId, initialLikeCount }: LikeButtonPr
         <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: favorited ? "'FILL' 1" : "'FILL' 0" }}>
           bookmark
         </span>
-        <span>{favorited ? 'Saved' : 'Save'}</span>
+        <span>{favorited ? '已收藏' : '收藏'}</span>
       </button>
 
       {!userId && (
         <span className="text-xs text-secondary ml-2">
-          <a href="/login" className="text-primary hover:underline">Sign in</a> to interact
+          <a href="/login" className="text-primary hover:underline">登录</a> 后可互动
         </span>
       )}
     </div>

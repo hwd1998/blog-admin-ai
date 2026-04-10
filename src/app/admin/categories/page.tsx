@@ -71,7 +71,7 @@ export default function AdminCategoriesPage() {
   }
 
   const deleteCategory = async (id: string) => {
-    if (!confirm('Delete this category?')) return
+    if (!confirm('确定删除该分类？关联文章的分类关系也会被解除。')) return
     await supabase.from('categories').delete().eq('id', id)
     await fetchData()
   }
@@ -99,7 +99,7 @@ export default function AdminCategoriesPage() {
   }
 
   const deleteTag = async (id: string) => {
-    if (!confirm('Delete this tag?')) return
+    if (!confirm('确定删除该标签？关联文章的标签关系也会被解除。')) return
     await supabase.from('tags').delete().eq('id', id)
     await fetchData()
   }
@@ -107,8 +107,8 @@ export default function AdminCategoriesPage() {
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-[#1A1A1A] mb-1">Categories &amp; Tags</h1>
-        <p className="text-sm text-stone-500">Manage article taxonomy</p>
+        <h1 className="text-2xl font-semibold text-[#1A1A1A] mb-1">分类与标签</h1>
+        <p className="text-sm text-stone-500">管理文章的分类与标签</p>
       </div>
 
       {error && (
@@ -120,26 +120,26 @@ export default function AdminCategoriesPage() {
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
         {/* Categories */}
         <div>
-          <h2 className="text-sm font-semibold text-stone-700 uppercase tracking-wider mb-4">
-            Categories ({categories.length})
+          <h2 className="text-sm font-semibold text-stone-700 tracking-wider mb-4">
+            分类（{categories.length}）
           </h2>
 
           {/* Add form */}
           <form onSubmit={addCategory} className="bg-white border border-stone-200 p-5 mb-4 space-y-3">
-            <h3 className="text-xs font-semibold text-stone-500 uppercase tracking-wider">New Category</h3>
+            <h3 className="text-xs font-semibold text-stone-500 tracking-wider">新建分类</h3>
             <div>
-              <label className="block text-xs text-stone-500 mb-1">Name</label>
+              <label className="block text-xs text-stone-500 mb-1">名称</label>
               <input
                 type="text"
                 value={catName}
                 onChange={(e) => { setCatName(e.target.value); setCatSlugManual(false) }}
-                placeholder="e.g. Technology"
+                placeholder="例如：技术"
                 required
                 className="w-full px-3 py-2 border border-stone-200 text-sm text-stone-700 focus:outline-none focus:border-amber-400 transition-colors"
               />
             </div>
             <div>
-              <label className="block text-xs text-stone-500 mb-1">Slug</label>
+              <label className="block text-xs text-stone-500 mb-1">Slug（URL 段）</label>
               <input
                 type="text"
                 value={catSlug}
@@ -150,12 +150,12 @@ export default function AdminCategoriesPage() {
               />
             </div>
             <div>
-              <label className="block text-xs text-stone-500 mb-1">Description (optional)</label>
+              <label className="block text-xs text-stone-500 mb-1">描述（选填）</label>
               <input
                 type="text"
                 value={catDesc}
                 onChange={(e) => setCatDesc(e.target.value)}
-                placeholder="Brief description..."
+                placeholder="简短说明…"
                 className="w-full px-3 py-2 border border-stone-200 text-sm text-stone-700 focus:outline-none focus:border-amber-400 transition-colors"
               />
             </div>
@@ -164,14 +164,14 @@ export default function AdminCategoriesPage() {
               disabled={loading}
               className="px-4 py-2 bg-amber-500 text-white text-sm font-medium hover:bg-amber-600 transition-colors disabled:opacity-50"
             >
-              Add Category
+              添加分类
             </button>
           </form>
 
           {/* Category list */}
           <div className="bg-white border border-stone-200">
             {categories.length === 0 ? (
-              <div className="p-6 text-sm text-stone-500 text-center">No categories yet.</div>
+              <div className="p-6 text-sm text-stone-500 text-center">暂无分类</div>
             ) : (
               <ul className="divide-y divide-stone-100">
                 {categories.map((cat) => (
@@ -186,7 +186,7 @@ export default function AdminCategoriesPage() {
                     <button
                       onClick={() => deleteCategory(cat.id)}
                       className="p-1 text-stone-400 hover:text-red-600 transition-colors"
-                      title="Delete"
+                      title="删除"
                     >
                       <span className="material-symbols-outlined text-[16px]">delete</span>
                     </button>
@@ -199,26 +199,26 @@ export default function AdminCategoriesPage() {
 
         {/* Tags */}
         <div>
-          <h2 className="text-sm font-semibold text-stone-700 uppercase tracking-wider mb-4">
-            Tags ({tags.length})
+          <h2 className="text-sm font-semibold text-stone-700 tracking-wider mb-4">
+            标签（{tags.length}）
           </h2>
 
           {/* Add form */}
           <form onSubmit={addTag} className="bg-white border border-stone-200 p-5 mb-4 space-y-3">
-            <h3 className="text-xs font-semibold text-stone-500 uppercase tracking-wider">New Tag</h3>
+            <h3 className="text-xs font-semibold text-stone-500 tracking-wider">新建标签</h3>
             <div>
-              <label className="block text-xs text-stone-500 mb-1">Name</label>
+              <label className="block text-xs text-stone-500 mb-1">名称</label>
               <input
                 type="text"
                 value={tagName}
                 onChange={(e) => { setTagName(e.target.value); setTagSlugManual(false) }}
-                placeholder="e.g. design"
+                placeholder="例如：设计"
                 required
                 className="w-full px-3 py-2 border border-stone-200 text-sm text-stone-700 focus:outline-none focus:border-amber-400 transition-colors"
               />
             </div>
             <div>
-              <label className="block text-xs text-stone-500 mb-1">Slug</label>
+              <label className="block text-xs text-stone-500 mb-1">Slug（URL 段）</label>
               <input
                 type="text"
                 value={tagSlug}
@@ -233,14 +233,14 @@ export default function AdminCategoriesPage() {
               disabled={loading}
               className="px-4 py-2 bg-amber-500 text-white text-sm font-medium hover:bg-amber-600 transition-colors disabled:opacity-50"
             >
-              Add Tag
+              添加标签
             </button>
           </form>
 
           {/* Tag list */}
           <div className="bg-white border border-stone-200">
             {tags.length === 0 ? (
-              <div className="p-6 text-sm text-stone-500 text-center">No tags yet.</div>
+              <div className="p-6 text-sm text-stone-500 text-center">暂无标签</div>
             ) : (
               <div className="p-4 flex flex-wrap gap-2">
                 {tags.map((tag) => (
@@ -249,7 +249,7 @@ export default function AdminCategoriesPage() {
                     <button
                       onClick={() => deleteTag(tag.id)}
                       className="text-stone-400 hover:text-red-600 transition-colors ml-1"
-                      title="Delete"
+                      title="删除"
                     >
                       <span className="material-symbols-outlined text-[12px]">close</span>
                     </button>

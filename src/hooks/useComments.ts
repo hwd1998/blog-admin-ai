@@ -1,7 +1,6 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import type { Comment } from '@/types'
 
 interface UseCommentsReturn {
@@ -12,65 +11,49 @@ interface UseCommentsReturn {
   refetch: () => Promise<void>
 }
 
-function getDisplayName(user: { email?: string | null; user_metadata?: Record<string, unknown> }) {
-  const metadataName =
-    (typeof user.user_metadata?.full_name === 'string' && user.user_metadata.full_name) ||
-    (typeof user.user_metadata?.name === 'string' && user.user_metadata.name) ||
-    (typeof user.user_metadata?.preferred_username === 'string' && user.user_metadata.preferred_username)
-
-  if (metadataName && metadataName.trim()) return metadataName.trim()
-  if (user.email) return user.email.split('@')[0]
-  return 'Reader'
-}
-
 export function useComments(articleId: string): UseCommentsReturn {
   const [comments, setComments] = useState<Comment[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  // createClient returns a stable singleton for browser clients
-  const supabase = createClient()
 
   const fetchComments = useCallback(async () => {
     setLoading(true)
     setError(null)
 
-    const { data, error: fetchError } = await supabase
-      .from('comments')
-      .select('*')
-      .eq('article_id', articleId)
-      .eq('status', 'approved')
-      .order('created_at', { ascending: true })
-
-    if (fetchError) {
-      setError(fetchError.message)
-    } else {
-      setComments(data ?? [])
+    const res = await fetch(
+      `/api/comments?articleId=${encodeURIComponent(articleId)}`
+    )
+    if (!res.ok) {
+      setError('Failed to load comments')
+      setLoading(false)
+      return
     }
 
+    const data = (await res.json()) as { comments?: Comment[] }
+    setComments(data.comments ?? [])
     setLoading(false)
   }, [articleId])
 
   useEffect(() => {
-    fetchComments()
+    void fetchComments()
   }, [fetchComments])
 
   const submitComment = async (content: string): Promise<{ success: boolean; error?: string }> => {
-    const { data: { user } } = await supabase.auth.getUser()
+    const res = await fetch('/api/comments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        articleId,
+        content: content.trim(),
+      }),
+    })
 
-    if (!user) {
+    if (res.status === 401) {
       return { success: false, error: 'You must be signed in to comment.' }
     }
 
-    const { error: insertError } = await supabase.from('comments').insert({
-      article_id: articleId,
-      author_id: user.id,
-      author_name: getDisplayName(user),
-      content: content.trim(),
-      status: 'pending',
-    })
-
-    if (insertError) {
-      return { success: false, error: insertError.message }
+    if (!res.ok) {
+      return { success: false, error: 'Failed to post comment' }
     }
 
     return { success: true }

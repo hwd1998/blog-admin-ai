@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
-import { createClient } from '@/lib/supabase/client'
 import { slugify } from '@/lib/utils'
 import ImageUpload from '@/components/admin/ImageUpload'
 import MarkdownEditor from '@/components/admin/MarkdownEditor'
@@ -13,7 +12,6 @@ const Editor = dynamic(() => import('@/components/admin/Editor'), { ssr: false }
 
 export default function NewArticlePage() {
   const router = useRouter()
-  const supabase = createClient()
 
   const [title, setTitle] = useState('')
   const [slug, setSlug] = useState('')
@@ -34,12 +32,11 @@ export default function NewArticlePage() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const [{ data: cats }, { data: tagData }] = await Promise.all([
-        supabase.from('categories').select('*').order('name'),
-        supabase.from('tags').select('*').order('name'),
-      ])
-      setCategories(cats ?? [])
-      setTags(tagData ?? [])
+      const res = await fetch('/api/admin/taxonomy')
+      if (!res.ok) return
+      const data = (await res.json()) as { categories: Category[]; tags: Tag[] }
+      setCategories(data.categories ?? [])
+      setTags(data.tags ?? [])
     }
     fetchData()
   }, [])
@@ -76,63 +73,29 @@ export default function NewArticlePage() {
     setSaving(true)
     setError(null)
 
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      setError('Not authenticated.')
+    const res = await fetch('/api/admin/articles', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: title.trim(),
+        slug: slug.trim(),
+        summary: summary.trim() || null,
+        content,
+        content_format: contentFormat,
+        cover_image_url: coverImageUrl || null,
+        status: saveStatus,
+        published_at: saveStatus === 'published' ? new Date().toISOString() : null,
+        categoryIds: selectedCategories,
+        tagIds: selectedTags,
+      }),
+    })
+
+    const data = (await res.json()) as { error?: string }
+    if (!res.ok) {
+      setError(data.error ?? 'Save failed')
       setSaving(false)
       return
     }
-
-    const articleData = {
-      title: title.trim(),
-      slug: slug.trim(),
-      summary: summary.trim() || null,
-      content,
-      content_format: contentFormat,
-      cover_image_url: coverImageUrl || null,
-      status: saveStatus,
-      author_id: user.id,
-      published_at: saveStatus === 'published' ? new Date().toISOString() : null,
-    }
-
-    const { data: article, error: insertError } = await supabase
-      .from('articles')
-      .insert(articleData)
-      .select()
-      .single()
-
-    if (insertError) {
-      setError(insertError.message)
-      setSaving(false)
-      return
-    }
-
-    // Insert categories and tags
-    const insertPromises: Promise<unknown>[] = []
-
-    if (selectedCategories.length > 0) {
-      insertPromises.push(
-        Promise.resolve(supabase.from('article_categories').insert(
-          selectedCategories.map((catId) => ({
-            article_id: article.id,
-            category_id: catId,
-          }))
-        ))
-      )
-    }
-
-    if (selectedTags.length > 0) {
-      insertPromises.push(
-        Promise.resolve(supabase.from('article_tags').insert(
-          selectedTags.map((tagId) => ({
-            article_id: article.id,
-            tag_id: tagId,
-          }))
-        ))
-      )
-    }
-
-    await Promise.all(insertPromises)
 
     router.push('/admin/articles')
     router.refresh()

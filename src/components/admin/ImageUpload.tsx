@@ -1,7 +1,6 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 
 interface ImageUploadProps {
   onUpload: (url: string) => void
@@ -12,19 +11,16 @@ export default function ImageUpload({ onUpload, label = 'Upload Image' }: ImageU
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const supabase = createClient()
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
-    // Validate file type
     if (!file.type.startsWith('image/')) {
       setError('Only image files are allowed.')
       return
     }
 
-    // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       setError('Image must be under 5MB.')
       return
@@ -33,24 +29,27 @@ export default function ImageUpload({ onUpload, label = 'Upload Image' }: ImageU
     setUploading(true)
     setError(null)
 
-    const ext = file.name.split('.').pop()
-    const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+    const formData = new FormData()
+    formData.append('file', file)
 
-    const { data, error: uploadError } = await supabase.storage
-      .from('media')
-      .upload(fileName, file, { cacheControl: '3600', upsert: false })
+    const res = await fetch('/api/upload', {
+      method: 'POST',
+      body: formData,
+    })
 
-    if (uploadError) {
-      setError(`Upload failed: ${uploadError.message}`)
+    const data = (await res.json()) as { url?: string; error?: string }
+
+    if (!res.ok) {
+      setError(data.error ?? 'Upload failed')
       setUploading(false)
       return
     }
 
-    const { data: urlData } = supabase.storage.from('media').getPublicUrl(data.path)
-    onUpload(urlData.publicUrl)
+    if (data.url) {
+      onUpload(data.url)
+    }
     setUploading(false)
 
-    // Reset input
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }

@@ -2,21 +2,10 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { useSession } from 'next-auth/react'
 
 interface CommentFormProps {
   articleId: string
-}
-
-function getDisplayName(user: { email?: string | null; user_metadata?: Record<string, unknown> }) {
-  const metadataName =
-    (typeof user.user_metadata?.full_name === 'string' && user.user_metadata.full_name) ||
-    (typeof user.user_metadata?.name === 'string' && user.user_metadata.name) ||
-    (typeof user.user_metadata?.preferred_username === 'string' && user.user_metadata.preferred_username)
-
-  if (metadataName && metadataName.trim()) return metadataName.trim()
-  if (user.email) return user.email.split('@')[0]
-  return '读者'
 }
 
 export default function CommentForm({ articleId }: CommentFormProps) {
@@ -25,7 +14,7 @@ export default function CommentForm({ articleId }: CommentFormProps) {
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
-  const supabase = createClient()
+  const { data: session } = useSession()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -34,23 +23,22 @@ export default function CommentForm({ articleId }: CommentFormProps) {
     setSubmitting(true)
     setError(null)
 
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
+    if (!session?.user?.id) {
       setError('请先登录后再评论。')
       setSubmitting(false)
       return
     }
 
-    const { error: insertError } = await supabase.from('comments').insert({
-      article_id: articleId,
-      author_id: user.id,
-      author_name: getDisplayName(user),
-      content: content.trim(),
-      status: 'pending',
+    const res = await fetch('/api/comments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        articleId,
+        content: content.trim(),
+      }),
     })
 
-    if (insertError) {
+    if (!res.ok) {
       setError('评论提交失败，请稍后重试。')
       setSubmitting(false)
       return

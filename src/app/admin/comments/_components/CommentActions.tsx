@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 
 interface CommentActionsProps {
   comment: {
@@ -14,11 +13,14 @@ interface CommentActionsProps {
 export default function CommentActions({ comment }: CommentActionsProps) {
   const [loading, setLoading] = useState(false)
   const router = useRouter()
-  const supabase = createClient()
 
   const updateStatus = async (status: string) => {
     setLoading(true)
-    await supabase.from('comments').update({ status }).eq('id', comment.id)
+    await fetch(`/api/admin/comments/${comment.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    })
     setLoading(false)
     router.refresh()
   }
@@ -26,7 +28,7 @@ export default function CommentActions({ comment }: CommentActionsProps) {
   const deleteComment = async () => {
     if (!confirm('Delete this comment permanently?')) return
     setLoading(true)
-    await supabase.from('comments').delete().eq('id', comment.id)
+    await fetch(`/api/admin/comments/${comment.id}`, { method: 'DELETE' })
     setLoading(false)
     router.refresh()
   }
@@ -52,14 +54,6 @@ export default function CommentActions({ comment }: CommentActionsProps) {
         >
           <span className="material-symbols-outlined text-[16px]">cancel</span>
         </button>
-      )}
-      {comment.status === 'pending' && (
-        <button
-          onClick={() => updateStatus('approved')}
-          disabled={loading}
-          title="Quick approve"
-          className="hidden"
-        />
       )}
       <button
         onClick={deleteComment}

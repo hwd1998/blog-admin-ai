@@ -1,5 +1,7 @@
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
+import { prisma } from '@/lib/prisma'
+import { listPublishedArticles } from '@/lib/data/article-queries'
+import { toArticleDTO } from '@/lib/mappers/article'
 import ArticleCard from '@/components/c/ArticleCard'
 import type { Article, Category, Tag } from '@/types'
 
@@ -21,103 +23,40 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   const categorySlug = params.category
   const tagSlug = params.tag
 
-  const supabase = await createClient()
+  const [categories, tags] = await Promise.all([
+    prisma.category.findMany({ orderBy: { name: 'asc' } }),
+    prisma.tag.findMany({ orderBy: { name: 'asc' } }),
+  ])
 
-  // Fetch categories for nav
-  const { data: categories } = await supabase
-    .from('categories')
-    .select('*')
-    .order('name')
-
-  // Fetch tags
-  const { data: tags } = await supabase
-    .from('tags')
-    .select('*')
-    .order('name')
-
-  // Build article query with filters
-  let query = supabase
-    .from('articles')
-    .select(`
-      *,
-      article_categories(
-        categories(*)
-      ),
-      article_tags(
-        tags(*)
-      )
-    `, { count: 'exact' })
-    .eq('status', 'published')
-    .order('published_at', { ascending: false })
-    .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1)
+  let categoryId: string | undefined
+  let tagId: string | undefined
 
   if (categorySlug) {
-    // Filter by category slug via join
-    const { data: cat } = await supabase
-      .from('categories')
-      .select('id')
-      .eq('slug', categorySlug)
-      .single()
-
-    if (cat) {
-      query = supabase
-        .from('articles')
-        .select(`
-          *,
-          article_categories(
-            categories(*)
-          ),
-          article_tags(
-            tags(*)
-          )
-        `, { count: 'exact' })
-        .eq('status', 'published')
-        .eq('article_categories.category_id', cat.id)
-        .order('published_at', { ascending: false })
-        .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1)
-    }
+    const cat = await prisma.category.findFirst({
+      where: { slug: categorySlug },
+      select: { id: true },
+    })
+    categoryId = cat?.id
   }
 
   if (tagSlug) {
-    const { data: tag } = await supabase
-      .from('tags')
-      .select('id')
-      .eq('slug', tagSlug)
-      .single()
-
-    if (tag) {
-      query = supabase
-        .from('articles')
-        .select(`
-          *,
-          article_categories(
-            categories(*)
-          ),
-          article_tags!inner(
-            tags(*)
-          )
-        `, { count: 'exact' })
-        .eq('status', 'published')
-        .eq('article_tags.tag_id', tag.id)
-        .order('published_at', { ascending: false })
-        .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1)
-    }
+    const tag = await prisma.tag.findFirst({
+      where: { slug: tagSlug },
+      select: { id: true },
+    })
+    tagId = tag?.id
   }
 
-  const { data: rawArticles, count } = await query
+  const { total, rows } = await listPublishedArticles({
+    page,
+    pageSize: PAGE_SIZE,
+    categoryId,
+    tagId,
+  })
 
-  // Normalize article data
-  const articles: Article[] = (rawArticles ?? []).map((a) => ({
-    ...a,
-    categories: (a.article_categories ?? [])
-      .map((ac: { categories: Category | null }) => ac.categories)
-      .filter(Boolean) as Category[],
-    tags: (a.article_tags ?? [])
-      .map((at: { tags: Tag | null }) => at.tags)
-      .filter(Boolean) as Tag[],
-  }))
+  const articles: Article[] = rows.map((a) => toArticleDTO(a))
 
-  const totalPages = Math.ceil((count ?? 0) / PAGE_SIZE)
+  const totalPages = Math.ceil(total / PAGE_SIZE)
 
   const buildUrl = (p: number) => {
     const sp = new URLSearchParams()
@@ -134,9 +73,23 @@ export default async function HomePage({ searchParams }: HomePageProps) {
     ? tags?.find((t) => t.slug === tagSlug)?.name
     : null
 
+  const categoriesDto: Category[] = categories.map((c) => ({
+    id: c.id,
+    name: c.name,
+    slug: c.slug,
+    description: c.description,
+    created_at: c.createdAt.toISOString(),
+  }))
+
+  const tagsDto: Tag[] = tags.map((t) => ({
+    id: t.id,
+    name: t.name,
+    slug: t.slug,
+    created_at: t.createdAt.toISOString(),
+  }))
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-10">
-      {/* Bio / Header */}
       <section className="mb-10 pb-10 border-b border-outline-variant">
         <div className="w-full">
           <p className="text-xs font-semibold tracking-widest uppercase text-secondary mb-3">
@@ -148,14 +101,11 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           <p className="text-secondary text-base leading-relaxed w-full">
             随笔、观察与对文化、技艺与值得琢磨的想法的记录。不追更新频率，只在觉得该写的时候发布。
           </p>
-     
         </div>
       </section>
 
       <div className="flex gap-10">
-        {/* Main content */}
         <div className="flex-1 min-w-0">
-          {/* Active filter banner */}
           {activeFilter && (
             <div className="mb-6 flex items-center gap-3">
               <span className="text-sm text-secondary">
@@ -171,7 +121,6 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             </div>
           )}
 
-          {/* Category filter */}
           {!tagSlug && (
             <div className="flex flex-wrap gap-2 mb-6">
               <Link
@@ -184,7 +133,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
               >
                 全部
               </Link>
-              {(categories ?? []).map((cat) => (
+              {categoriesDto.map((cat) => (
                 <Link
                   key={cat.id}
                   href={`/?category=${cat.slug}`}
@@ -200,7 +149,6 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             </div>
           )}
 
-          {/* Article list */}
           {articles.length === 0 ? (
             <div className="py-16 text-center">
               <p className="text-secondary">暂无文章。</p>
@@ -213,7 +161,6 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             </div>
           )}
 
-          {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-between pt-8 border-t border-outline-variant mt-4">
               {page > 1 ? (
@@ -247,16 +194,14 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           )}
         </div>
 
-        {/* Sidebar */}
         <aside className="hidden lg:block w-56 shrink-0">
-          {/* Popular tags */}
-          {tags && tags.length > 0 && (
+          {tagsDto.length > 0 && (
             <div className="mb-8">
               <p className="text-xs font-semibold tracking-widest uppercase text-secondary mb-3 pb-2 border-b border-outline-variant">
                 话题
               </p>
               <div className="flex flex-wrap gap-1.5">
-                {tags.map((tag) => (
+                {tagsDto.map((tag) => (
                   <Link
                     key={tag.id}
                     href={`/tags/${tag.slug}`}
@@ -273,14 +218,13 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             </div>
           )}
 
-          {/* Categories */}
-          {categories && categories.length > 0 && (
+          {categoriesDto.length > 0 && (
             <div>
               <p className="text-xs font-semibold tracking-widest uppercase text-secondary mb-3 pb-2 border-b border-outline-variant">
                 分类
               </p>
               <div className="space-y-1">
-                {categories.map((cat) => (
+                {categoriesDto.map((cat) => (
                   <Link
                     key={cat.id}
                     href={`/categories/${cat.slug}`}

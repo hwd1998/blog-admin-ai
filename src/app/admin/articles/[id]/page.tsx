@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import dynamic from 'next/dynamic'
-import { createClient } from '@/lib/supabase/client'
 import ImageUpload from '@/components/admin/ImageUpload'
 import MarkdownEditor from '@/components/admin/MarkdownEditor'
 import type { ArticleContentFormat, Category, Tag } from '@/types'
@@ -14,7 +13,6 @@ export default function EditArticlePage() {
   const router = useRouter()
   const params = useParams()
   const articleId = params.id as string
-  const supabase = createClient()
 
   const [title, setTitle] = useState('')
   const [slug, setSlug] = useState('')
@@ -35,31 +33,44 @@ export default function EditArticlePage() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const [{ data: article }, { data: cats }, { data: tagData }, { data: artCats }, { data: artTags }] =
-        await Promise.all([
-          supabase.from('articles').select('*').eq('id', articleId).single(),
-          supabase.from('categories').select('*').order('name'),
-          supabase.from('tags').select('*').order('name'),
-          supabase.from('article_categories').select('category_id').eq('article_id', articleId),
-          supabase.from('article_tags').select('tag_id').eq('article_id', articleId),
-        ])
+      const [artRes, taxRes] = await Promise.all([
+        fetch(`/api/admin/articles/${encodeURIComponent(articleId)}`),
+        fetch('/api/admin/taxonomy'),
+      ])
 
-      if (article) {
-        setTitle(article.title)
-        setSlug(article.slug)
-        setSummary(article.summary ?? '')
-        setContent(article.content)
-        setContentFormat(
-          article.content_format === 'markdown' ? 'markdown' : 'html'
-        )
-        setCoverImageUrl(article.cover_image_url ?? '')
-        setStatus(article.status)
+      if (!artRes.ok) {
+        setLoading(false)
+        return
       }
 
-      setCategories(cats ?? [])
-      setTags(tagData ?? [])
-      setSelectedCategories((artCats ?? []).map((ac) => ac.category_id))
-      setSelectedTags((artTags ?? []).map((at) => at.tag_id))
+      const artJson = (await artRes.json()) as {
+        article: {
+          title: string
+          slug: string
+          summary: string | null
+          content: string
+          content_format: string
+          cover_image_url: string | null
+          status: 'draft' | 'published'
+        }
+        categoryIds: string[]
+        tagIds: string[]
+      }
+      const taxJson = (await taxRes.json()) as { categories: Category[]; tags: Tag[] }
+
+      const article = artJson.article
+      setTitle(article.title)
+      setSlug(article.slug)
+      setSummary(article.summary ?? '')
+      setContent(article.content)
+      setContentFormat(article.content_format === 'markdown' ? 'markdown' : 'html')
+      setCoverImageUrl(article.cover_image_url ?? '')
+      setStatus(article.status)
+
+      setCategories(taxJson.categories ?? [])
+      setTags(taxJson.tags ?? [])
+      setSelectedCategories(artJson.categoryIds ?? [])
+      setSelectedTags(artJson.tagIds ?? [])
       setLoading(false)
     }
 
@@ -87,51 +98,28 @@ export default function EditArticlePage() {
     setSaving(true)
     setError(null)
 
-    const articleData: Record<string, unknown> = {
-      title: title.trim(),
-      slug: slug.trim(),
-      summary: summary.trim() || null,
-      content,
-      content_format: contentFormat,
-      cover_image_url: coverImageUrl || null,
-      status: saveStatus,
-    }
+    const res = await fetch(`/api/admin/articles/${encodeURIComponent(articleId)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: title.trim(),
+        slug: slug.trim(),
+        summary: summary.trim() || null,
+        content,
+        content_format: contentFormat,
+        cover_image_url: coverImageUrl || null,
+        status: saveStatus,
+        published_at: saveStatus === 'published' ? new Date().toISOString() : null,
+        categoryIds: selectedCategories,
+        tagIds: selectedTags,
+      }),
+    })
 
-    if (saveStatus === 'published') {
-      articleData.published_at = new Date().toISOString()
-    }
-
-    const { error: updateError } = await supabase
-      .from('articles')
-      .update(articleData)
-      .eq('id', articleId)
-
-    if (updateError) {
-      setError(updateError.message)
+    const data = (await res.json()) as { error?: string }
+    if (!res.ok) {
+      setError(data.error ?? 'Update failed')
       setSaving(false)
       return
-    }
-
-    // Re-sync categories
-    await supabase.from('article_categories').delete().eq('article_id', articleId)
-    if (selectedCategories.length > 0) {
-      await supabase.from('article_categories').insert(
-        selectedCategories.map((catId) => ({
-          article_id: articleId,
-          category_id: catId,
-        }))
-      )
-    }
-
-    // Re-sync tags
-    await supabase.from('article_tags').delete().eq('article_id', articleId)
-    if (selectedTags.length > 0) {
-      await supabase.from('article_tags').insert(
-        selectedTags.map((tagId) => ({
-          article_id: articleId,
-          tag_id: tagId,
-        }))
-      )
     }
 
     setSaving(false)

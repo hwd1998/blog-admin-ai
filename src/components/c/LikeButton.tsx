@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 
 interface LikeButtonProps {
   articleId: string
@@ -14,31 +13,18 @@ export default function LikeButton({ articleId, initialLikeCount }: LikeButtonPr
   const [favorited, setFavorited] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
-  const supabase = createClient()
 
   useEffect(() => {
     const init = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        setUserId(user.id)
-
-        const [{ data: likeData }, { data: favData }] = await Promise.all([
-          supabase
-            .from('likes')
-            .select('id')
-            .eq('article_id', articleId)
-            .eq('user_id', user.id)
-            .maybeSingle(),
-          supabase
-            .from('favorites')
-            .select('id')
-            .eq('article_id', articleId)
-            .eq('user_id', user.id)
-            .maybeSingle(),
-        ])
-
-        setLiked(!!likeData)
-        setFavorited(!!favData)
+      const sessionRes = await fetch('/api/auth/session')
+      const session = (await sessionRes.json()) as { user?: { id?: string } } | null
+      const uid = session?.user?.id
+      if (uid) {
+        setUserId(uid)
+        const res = await fetch(`/api/article-interactions?articleId=${encodeURIComponent(articleId)}`)
+        const data = (await res.json()) as { liked?: boolean; favorited?: boolean }
+        setLiked(Boolean(data.liked))
+        setFavorited(Boolean(data.favorited))
       }
       setLoading(false)
     }
@@ -46,28 +32,28 @@ export default function LikeButton({ articleId, initialLikeCount }: LikeButtonPr
     init()
   }, [articleId])
 
+  const postInteraction = async (
+    kind: 'like' | 'favorite',
+    action: 'add' | 'remove'
+  ) => {
+    await fetch('/api/article-interactions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ articleId, kind, action }),
+    })
+  }
+
   const toggleLike = async () => {
     if (!userId) return
 
     if (liked) {
-      // Optimistic update
       setLiked(false)
       setLikeCount((c) => c - 1)
-
-      await supabase
-        .from('likes')
-        .delete()
-        .eq('article_id', articleId)
-        .eq('user_id', userId)
+      await postInteraction('like', 'remove')
     } else {
-      // Optimistic update
       setLiked(true)
       setLikeCount((c) => c + 1)
-
-      await supabase.from('likes').insert({
-        article_id: articleId,
-        user_id: userId,
-      })
+      await postInteraction('like', 'add')
     }
   }
 
@@ -76,17 +62,10 @@ export default function LikeButton({ articleId, initialLikeCount }: LikeButtonPr
 
     if (favorited) {
       setFavorited(false)
-      await supabase
-        .from('favorites')
-        .delete()
-        .eq('article_id', articleId)
-        .eq('user_id', userId)
+      await postInteraction('favorite', 'remove')
     } else {
       setFavorited(true)
-      await supabase.from('favorites').insert({
-        article_id: articleId,
-        user_id: userId,
-      })
+      await postInteraction('favorite', 'add')
     }
   }
 

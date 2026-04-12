@@ -1,23 +1,18 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { slugify } from '@/lib/utils'
 import type { Category, Tag } from '@/types'
 
 export default function AdminCategoriesPage() {
-  const supabase = createClient()
-
   const [categories, setCategories] = useState<Category[]>([])
   const [tags, setTags] = useState<Tag[]>([])
 
-  // Category form
   const [catName, setCatName] = useState('')
   const [catSlug, setCatSlug] = useState('')
   const [catDesc, setCatDesc] = useState('')
   const [catSlugManual, setCatSlugManual] = useState(false)
 
-  // Tag form
   const [tagName, setTagName] = useState('')
   const [tagSlug, setTagSlug] = useState('')
   const [tagSlugManual, setTagSlugManual] = useState(false)
@@ -38,12 +33,11 @@ export default function AdminCategoriesPage() {
   }, [tagName, tagSlugManual])
 
   const fetchData = async () => {
-    const [{ data: cats }, { data: tagData }] = await Promise.all([
-      supabase.from('categories').select('*').order('name'),
-      supabase.from('tags').select('*').order('name'),
-    ])
-    setCategories(cats ?? [])
-    setTags(tagData ?? [])
+    const res = await fetch('/api/admin/taxonomy')
+    if (!res.ok) return
+    const data = (await res.json()) as { categories: Category[]; tags: Tag[] }
+    setCategories(data.categories ?? [])
+    setTags(data.tags ?? [])
   }
 
   const addCategory = async (e: React.FormEvent) => {
@@ -52,14 +46,19 @@ export default function AdminCategoriesPage() {
     setLoading(true)
     setError(null)
 
-    const { error: err } = await supabase.from('categories').insert({
-      name: catName.trim(),
-      slug: catSlug.trim(),
-      description: catDesc.trim() || null,
+    const res = await fetch('/api/admin/categories', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: catName.trim(),
+        slug: catSlug.trim(),
+        description: catDesc.trim() || null,
+      }),
     })
+    const data = (await res.json()) as { error?: string }
 
-    if (err) {
-      setError(err.message)
+    if (!res.ok) {
+      setError(data.error ?? '添加失败')
     } else {
       setCatName('')
       setCatSlug('')
@@ -72,7 +71,7 @@ export default function AdminCategoriesPage() {
 
   const deleteCategory = async (id: string) => {
     if (!confirm('确定删除该分类？关联文章的分类关系也会被解除。')) return
-    await supabase.from('categories').delete().eq('id', id)
+    await fetch(`/api/admin/categories?id=${encodeURIComponent(id)}`, { method: 'DELETE' })
     await fetchData()
   }
 
@@ -82,13 +81,18 @@ export default function AdminCategoriesPage() {
     setLoading(true)
     setError(null)
 
-    const { error: err } = await supabase.from('tags').insert({
-      name: tagName.trim(),
-      slug: tagSlug.trim(),
+    const res = await fetch('/api/admin/tags', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: tagName.trim(),
+        slug: tagSlug.trim(),
+      }),
     })
+    const data = (await res.json()) as { error?: string }
 
-    if (err) {
-      setError(err.message)
+    if (!res.ok) {
+      setError(data.error ?? '添加失败')
     } else {
       setTagName('')
       setTagSlug('')
@@ -100,7 +104,7 @@ export default function AdminCategoriesPage() {
 
   const deleteTag = async (id: string) => {
     if (!confirm('确定删除该标签？关联文章的标签关系也会被解除。')) return
-    await supabase.from('tags').delete().eq('id', id)
+    await fetch(`/api/admin/tags?id=${encodeURIComponent(id)}`, { method: 'DELETE' })
     await fetchData()
   }
 
@@ -118,13 +122,11 @@ export default function AdminCategoriesPage() {
       )}
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-        {/* Categories */}
         <div>
           <h2 className="text-sm font-semibold text-stone-700 tracking-wider mb-4">
             分类（{categories.length}）
           </h2>
 
-          {/* Add form */}
           <form onSubmit={addCategory} className="bg-white border border-stone-200 p-5 mb-4 space-y-3">
             <h3 className="text-xs font-semibold text-stone-500 tracking-wider">新建分类</h3>
             <div>
@@ -168,7 +170,6 @@ export default function AdminCategoriesPage() {
             </button>
           </form>
 
-          {/* Category list */}
           <div className="bg-white border border-stone-200">
             {categories.length === 0 ? (
               <div className="p-6 text-sm text-stone-500 text-center">暂无分类</div>
@@ -197,13 +198,11 @@ export default function AdminCategoriesPage() {
           </div>
         </div>
 
-        {/* Tags */}
         <div>
           <h2 className="text-sm font-semibold text-stone-700 tracking-wider mb-4">
             标签（{tags.length}）
           </h2>
 
-          {/* Add form */}
           <form onSubmit={addTag} className="bg-white border border-stone-200 p-5 mb-4 space-y-3">
             <h3 className="text-xs font-semibold text-stone-500 tracking-wider">新建标签</h3>
             <div>
@@ -237,7 +236,6 @@ export default function AdminCategoriesPage() {
             </button>
           </form>
 
-          {/* Tag list */}
           <div className="bg-white border border-stone-200">
             {tags.length === 0 ? (
               <div className="p-6 text-sm text-stone-500 text-center">暂无标签</div>

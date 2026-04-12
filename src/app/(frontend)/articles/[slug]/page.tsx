@@ -2,7 +2,12 @@ import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import type { Metadata } from 'next'
-import { createClient } from '@/lib/supabase/server'
+import {
+  getPublishedArticleBySlug,
+  incrementArticleViewCount,
+  countLikesForArticle,
+} from '@/lib/data/article-queries'
+import { toArticleDTO } from '@/lib/mappers/article'
 import ArticleContent from '@/components/c/ArticleContent'
 import TableOfContents from '@/components/c/TableOfContents'
 import CommentList from '@/components/c/CommentList'
@@ -20,68 +25,31 @@ interface ArticlePageProps {
 
 export async function generateMetadata({ params }: ArticlePageProps): Promise<Metadata> {
   const { slug } = await params
-  const supabase = await createClient()
+  const row = await getPublishedArticleBySlug(slug)
 
-  const { data: article } = await supabase
-    .from('articles')
-    .select('title, summary, cover_image_url')
-    .eq('slug', slug)
-    .eq('status', 'published')
-    .single()
-
-  if (!article) return { title: '文章未找到' }
+  if (!row) return { title: '文章未找到' }
 
   return {
-    title: article.title,
-    description: article.summary ?? undefined,
+    title: row.title,
+    description: row.summary ?? undefined,
     openGraph: {
-      title: article.title,
-      description: article.summary ?? undefined,
-      images: article.cover_image_url ? [article.cover_image_url] : [],
+      title: row.title,
+      description: row.summary ?? undefined,
+      images: row.coverImageUrl ? [row.coverImageUrl] : [],
     },
   }
 }
 
 export default async function ArticlePage({ params }: ArticlePageProps) {
   const { slug } = await params
-  const supabase = await createClient()
-
-  // Fetch full article
-  const { data: rawArticle } = await supabase
-    .from('articles')
-    .select(`
-      *,
-      article_categories(
-        categories(*)
-      ),
-      article_tags(
-        tags(*)
-      )
-    `)
-    .eq('slug', slug)
-    .eq('status', 'published')
-    .single()
+  const rawArticle = await getPublishedArticleBySlug(slug)
 
   if (!rawArticle) notFound()
 
-  const article = {
-    ...rawArticle,
-    categories: (rawArticle.article_categories ?? [])
-      .map((ac: { categories: Category | null }) => ac.categories)
-      .filter(Boolean) as Category[],
-    tags: (rawArticle.article_tags ?? [])
-      .map((at: { tags: Tag | null }) => at.tags)
-      .filter(Boolean) as Tag[],
-  }
+  const article = toArticleDTO(rawArticle)
 
-  // Get like count
-  const { count: likeCount } = await supabase
-    .from('likes')
-    .select('*', { count: 'exact', head: true })
-    .eq('article_id', article.id)
-
-  // Increment view count (fire-and-forget)
-  supabase.rpc('increment_view_count', { article_slug: slug }).then(() => {})
+  const likeCount = await countLikesForArticle(article.id)
+  incrementArticleViewCount(slug).then(() => {})
 
   const displayHtml = articleBodyToDisplayHtml(
     article.content,
@@ -90,7 +58,6 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-10">
-      {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-xs text-secondary mb-8 font-mono">
         <Link href="/" className="hover:text-primary transition-colors">首页</Link>
         <span className="text-outline-variant">/</span>
@@ -109,11 +76,8 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
       </nav>
 
       <div className="flex gap-10">
-        {/* Main article */}
         <article className="flex-1 min-w-0">
-          {/* Article header */}
           <header className="mb-8">
-            {/* Categories */}
             {article.categories.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-3">
                 {article.categories.map((cat: Category) => (
@@ -138,7 +102,6 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
               </p>
             )}
 
-            {/* Meta */}
             <div className="flex items-center gap-4 flex-wrap py-3 border-y border-outline-variant">
               {article.published_at && (
                 <span className="font-mono text-xs text-secondary tracking-wider">
@@ -151,12 +114,11 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
               </span>
               <span className="flex items-center gap-1 text-xs text-secondary">
                 <span className="material-symbols-outlined text-[14px]">favorite</span>
-                {likeCount ?? 0} 赞
+                {likeCount} 赞
               </span>
             </div>
           </header>
 
-          {/* Cover image */}
           {article.cover_image_url && (
             <div className="mb-8 border border-outline-variant overflow-hidden">
               <Image
@@ -170,10 +132,8 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
             </div>
           )}
 
-          {/* Article content */}
           <ArticleContent content={displayHtml} />
 
-          {/* Tags */}
           {article.tags.length > 0 && (
             <div className="mt-8 flex flex-wrap gap-2 pt-6 border-t border-outline-variant">
               {article.tags.map((tag: Tag) => (
@@ -188,10 +148,8 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
             </div>
           )}
 
-          {/* Like / Favorite buttons */}
-          <LikeButton articleId={article.id} initialLikeCount={likeCount ?? 0} />
+          <LikeButton articleId={article.id} initialLikeCount={likeCount} />
 
-          {/* Comments section */}
           <section className="mt-10 pt-8 border-t border-outline-variant">
             <h2 className="font-serif text-xl font-semibold mb-6">
               讨论
@@ -208,7 +166,6 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
           </section>
         </article>
 
-        {/* TOC Sidebar */}
         <TableOfContents content={displayHtml} />
       </div>
     </div>

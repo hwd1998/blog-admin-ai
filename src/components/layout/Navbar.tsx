@@ -3,28 +3,28 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
-import type { User } from '@supabase/supabase-js'
+import { useSession, signOut } from 'next-auth/react'
+import type { AuthUser } from '@/hooks/useAuth'
 
 export default function Navbar() {
   const pathname = usePathname()
   const router = useRouter()
-  const [user, setUser] = useState<User | null>(null)
+  const { data: session, status } = useSession()
+  const [user, setUser] = useState<AuthUser | null>(null)
   const [isAuthor, setIsAuthor] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
-  const supabase = createClient()
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setUser(user)
-    })
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
-    })
-
-    return () => subscription.unsubscribe()
-  }, [])
+    if (session?.user?.id) {
+      setUser({
+        id: session.user.id,
+        email: session.user.email,
+        name: session.user.name,
+      })
+    } else {
+      setUser(null)
+    }
+  }, [session])
 
   useEffect(() => {
     if (!user) {
@@ -48,7 +48,7 @@ export default function Navbar() {
   }, [user])
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut()
+    await signOut({ callbackUrl: '/' })
     router.push('/')
     router.refresh()
   }
@@ -58,10 +58,11 @@ export default function Navbar() {
     { href: '/about', label: '关于' },
   ]
 
+  const authLoading = status === 'loading'
+
   return (
     <header className="fixed top-0 left-0 right-0 z-50 h-14 bg-white/90 backdrop-blur-sm border-b border-outline-variant">
       <div className="max-w-6xl mx-auto px-4 h-full flex items-center justify-between">
-        {/* Brand */}
         <Link
           href="/"
           className="font-serif italic text-xl font-semibold tracking-wide text-on-surface hover:text-primary transition-colors"
@@ -69,7 +70,6 @@ export default function Navbar() {
           HWD BLOG
         </Link>
 
-        {/* Desktop Nav */}
         <nav className="hidden md:flex items-center gap-6">
           {navLinks.map((link) => (
             <Link
@@ -85,7 +85,7 @@ export default function Navbar() {
             </Link>
           ))}
 
-          {user ? (
+          {!authLoading && user ? (
             <div className="flex items-center gap-4">
               {isAuthor && (
                 <Link
@@ -99,77 +99,65 @@ export default function Navbar() {
                   后台
                 </Link>
               )}
+              <span className="text-xs text-secondary max-w-[140px] truncate">
+                {user.email}
+              </span>
               <button
+                type="button"
                 onClick={handleSignOut}
-                className="text-sm font-medium text-secondary hover:text-on-surface transition-colors"
+                className="text-sm text-secondary hover:text-on-surface transition-colors"
               >
                 退出
               </button>
             </div>
-          ) : (
+          ) : !authLoading ? (
             <Link
               href="/login"
-              className="text-sm font-medium text-secondary hover:text-on-surface transition-colors"
+              className="text-sm font-medium text-primary hover:text-primary-container transition-colors"
             >
               登录
             </Link>
-          )}
+          ) : null}
         </nav>
 
-        {/* Mobile menu button */}
         <button
-          className="md:hidden p-2 text-secondary"
-          onClick={() => setMenuOpen(!menuOpen)}
-          aria-label="展开或收起菜单"
+          type="button"
+          className="md:hidden p-2 text-on-surface"
+          onClick={() => setMenuOpen((o) => !o)}
+          aria-label="菜单"
         >
-          <span className="material-symbols-outlined text-xl">
-            {menuOpen ? 'close' : 'menu'}
-          </span>
+          <span className="material-symbols-outlined text-[24px]">menu</span>
         </button>
       </div>
 
-      {/* Mobile dropdown */}
       {menuOpen && (
-        <div className="md:hidden bg-white border-b border-outline-variant px-4 py-3 flex flex-col gap-3">
+        <div className="md:hidden border-t border-outline-variant bg-white px-4 py-3 space-y-2">
           {navLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
               onClick={() => setMenuOpen(false)}
-              className={`text-sm font-medium py-1 ${
-                pathname === link.href ? 'text-primary' : 'text-secondary'
-              }`}
+              className="block py-2 text-sm text-on-surface"
             >
               {link.label}
             </Link>
           ))}
-          {user ? (
+          {!authLoading && user ? (
             <>
               {isAuthor && (
-                <Link
-                  href="/admin"
-                  onClick={() => setMenuOpen(false)}
-                  className="text-sm font-medium py-1 text-secondary"
-                >
+                <Link href="/admin" onClick={() => setMenuOpen(false)} className="block py-2 text-sm">
                   后台
                 </Link>
               )}
-              <button
-                onClick={() => { handleSignOut(); setMenuOpen(false) }}
-                className="text-sm font-medium py-1 text-secondary text-left"
-              >
+              <button type="button" onClick={() => { setMenuOpen(false); void handleSignOut() }} className="block py-2 text-sm w-full text-left">
                 退出
               </button>
             </>
-          ) : (
-            <Link
-              href="/login"
-              onClick={() => setMenuOpen(false)}
-              className="text-sm font-medium py-1 text-secondary"
-            >
+          ) : !authLoading ? (
+            <Link href="/login" onClick={() => setMenuOpen(false)} className="block py-2 text-sm text-primary">
               登录
             </Link>
-          )}
+          ) : null}
         </div>
       )}
     </header>

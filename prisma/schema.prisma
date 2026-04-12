@@ -1,0 +1,139 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid()) @db.VarChar(36)
+  email        String   @unique @db.VarChar(255)
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  name         String?  @db.VarChar(255)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  articles  Article[]
+  comments  Comment[]
+  likes     Like[]
+  favorites Favorite[]
+
+  @@map("users")
+}
+
+model Category {
+  id          String   @id @default(uuid()) @db.VarChar(36)
+  name        String   @unique @db.VarChar(255)
+  slug        String   @unique @db.VarChar(255)
+  description String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  articleCategories ArticleCategory[]
+
+  @@map("categories")
+}
+
+model Tag {
+  id        String   @id @default(uuid()) @db.VarChar(36)
+  name      String   @unique @db.VarChar(255)
+  slug      String   @unique @db.VarChar(255)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  articleTags ArticleTag[]
+
+  @@map("tags")
+}
+
+model Article {
+  id             String    @id @default(uuid()) @db.VarChar(36)
+  title          String    @db.VarChar(500)
+  slug           String    @unique @db.VarChar(500)
+  summary        String?   @db.Text
+  content        String    @db.LongText
+  contentFormat  String    @default("html") @map("content_format") @db.VarChar(16)
+  coverImageUrl  String?   @map("cover_image_url") @db.VarChar(2048)
+  status         String    @db.VarChar(16)
+  viewCount      Int       @default(0) @map("view_count")
+  authorId       String    @map("author_id") @db.VarChar(36)
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  publishedAt    DateTime? @map("published_at")
+
+  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  articleCategories ArticleCategory[]
+  articleTags       ArticleTag[]
+  comments          Comment[]
+  likes             Like[]
+  favorites         Favorite[]
+
+  @@index([status])
+  @@index([authorId])
+  @@map("articles")
+}
+
+model ArticleCategory {
+  articleId  String @map("article_id") @db.VarChar(36)
+  categoryId String @map("category_id") @db.VarChar(36)
+
+  article  Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([articleId, categoryId])
+  @@map("article_categories")
+}
+
+model ArticleTag {
+  articleId String @map("article_id") @db.VarChar(36)
+  tagId     String @map("tag_id") @db.VarChar(36)
+
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([articleId, tagId])
+  @@map("article_tags")
+}
+
+model Comment {
+  id         String   @id @default(uuid()) @db.VarChar(36)
+  articleId  String   @map("article_id") @db.VarChar(36)
+  authorId   String   @map("author_id") @db.VarChar(36)
+  authorName String?  @map("author_name") @db.VarChar(255)
+  content    String   @db.Text
+  status     String   @db.VarChar(16)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  author  User    @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([articleId])
+  @@index([status])
+  @@map("comments")
+}
+
+model Like {
+  id        String   @id @default(uuid()) @db.VarChar(36)
+  articleId String   @map("article_id") @db.VarChar(36)
+  userId    String   @map("user_id") @db.VarChar(36)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([articleId, userId])
+  @@map("likes")
+}
+
+model Favorite {
+  id        String   @id @default(uuid()) @db.VarChar(36)
+  articleId String   @map("article_id") @db.VarChar(36)
+  userId    String   @map("user_id") @db.VarChar(36)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([articleId, userId])
+  @@map("favorites")
+}

@@ -1,10 +1,11 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import type { Metadata } from 'next'
-import { createClient } from '@/lib/supabase/server'
-import { createStaticClient } from '@/lib/supabase/static'
+import { prisma } from '@/lib/prisma'
+import { articleWithRelationsInclude } from '@/lib/data/article-queries'
+import { toArticleDTO } from '@/lib/mappers/article'
 import ArticleCard from '@/components/c/ArticleCard'
-import type { Article, Category, Tag } from '@/types'
+import type { Article } from '@/types'
 
 export const revalidate = 3600
 
@@ -13,19 +14,16 @@ interface TagPageProps {
 }
 
 export async function generateStaticParams() {
-  const supabase = createStaticClient()
-  const { data: tags } = await supabase.from('tags').select('slug')
-  return (tags ?? []).map((t) => ({ slug: t.slug }))
+  const rows = await prisma.tag.findMany({ select: { slug: true } })
+  return rows.map((t) => ({ slug: t.slug }))
 }
 
 export async function generateMetadata({ params }: TagPageProps): Promise<Metadata> {
   const { slug } = await params
-  const supabase = await createClient()
-  const { data: tag } = await supabase
-    .from('tags')
-    .select('name')
-    .eq('slug', slug)
-    .single()
+  const tag = await prisma.tag.findFirst({
+    where: { slug },
+    select: { name: true },
+  })
 
   if (!tag) return { title: '标签未找到' }
   return {
@@ -36,45 +34,23 @@ export async function generateMetadata({ params }: TagPageProps): Promise<Metada
 
 export default async function TagPage({ params }: TagPageProps) {
   const { slug } = await params
-  const supabase = await createClient()
 
-  const { data: tag } = await supabase
-    .from('tags')
-    .select('*')
-    .eq('slug', slug)
-    .single()
-
+  const tag = await prisma.tag.findFirst({ where: { slug } })
   if (!tag) notFound()
 
-  const { data: rawArticles } = await supabase
-    .from('articles')
-    .select(`
-      *,
-      article_categories(
-        categories(*)
-      ),
-      article_tags!inner(
-        tags(*),
-        tag_id
-      )
-    `)
-    .eq('status', 'published')
-    .eq('article_tags.tag_id', tag.id)
-    .order('published_at', { ascending: false })
+  const rawArticles = await prisma.article.findMany({
+    where: {
+      status: 'published',
+      articleTags: { some: { tagId: tag.id } },
+    },
+    include: articleWithRelationsInclude,
+    orderBy: [{ publishedAt: 'desc' }, { createdAt: 'desc' }],
+  })
 
-  const articles: Article[] = (rawArticles ?? []).map((a) => ({
-    ...a,
-    categories: (a.article_categories ?? [])
-      .map((ac: { categories: Category | null }) => ac.categories)
-      .filter(Boolean) as Category[],
-    tags: (a.article_tags ?? [])
-      .map((at: { tags: Tag | null }) => at.tags)
-      .filter(Boolean) as Tag[],
-  }))
+  const articles: Article[] = rawArticles.map((a) => toArticleDTO(a))
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-10">
-      {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-xs text-secondary mb-8 font-mono">
         <Link href="/" className="hover:text-primary transition-colors">首页</Link>
         <span className="text-outline-variant">/</span>
@@ -83,7 +59,6 @@ export default async function TagPage({ params }: TagPageProps) {
         <span className="text-on-surface">#{tag.name}</span>
       </nav>
 
-      {/* Header */}
       <header className="mb-10 pb-8 border-b border-outline-variant">
         <p className="text-xs font-semibold tracking-widest uppercase text-secondary mb-2">标签</p>
         <h1 className="font-serif text-3xl font-semibold text-on-surface mb-2">
@@ -94,7 +69,6 @@ export default async function TagPage({ params }: TagPageProps) {
         </p>
       </header>
 
-      {/* Articles */}
       {articles.length === 0 ? (
         <p className="text-secondary text-center py-12">该标签下暂无文章。</p>
       ) : (

@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
+import { signIn } from 'next-auth/react'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -11,36 +11,35 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
-  const supabase = createClient()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError(null)
 
-    const { data, error: authError } = await supabase.auth.signInWithPassword({
-      email,
+    const params =
+      typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null
+    const redirectTo = params?.get('redirectTo')?.trim() || '/admin'
+
+    const res = await signIn('credentials', {
+      email: email.trim(),
       password,
+      redirect: false,
     })
 
-    if (authError) {
-      setError(authError.message)
+    if (res?.error) {
+      setError('邮箱或密码不正确')
       setLoading(false)
       return
     }
 
-    if (data.user) {
-      // Redirect to /admin — middleware will gate based on AUTHOR_UID
-      // Non-authors will be redirected to / by middleware
-      router.push('/admin')
-      router.refresh()
-    }
+    router.push(redirectTo.startsWith('/') ? redirectTo : '/admin')
+    router.refresh()
   }
 
   return (
     <div className="min-h-[calc(100vh-56px)] flex items-center justify-center px-4 py-16">
       <div className="w-full max-w-sm">
-        {/* Header */}
         <div className="mb-8 text-center">
           <Link href="/" className="inline-block mb-6">
             <span className="font-serif italic text-2xl font-semibold text-on-surface">
@@ -53,7 +52,6 @@ export default function LoginPage() {
           <p className="text-secondary text-sm">登录后可点赞、收藏与评论</p>
         </div>
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="email" className="block text-xs font-semibold tracking-widest uppercase text-secondary mb-1.5">
@@ -102,7 +100,6 @@ export default function LoginPage() {
           </button>
         </form>
 
-        {/* Guest access */}
         <div className="mt-4">
           <div className="flex items-center gap-3 mb-4">
             <div className="flex-1 h-px bg-outline-variant" />
@@ -117,7 +114,6 @@ export default function LoginPage() {
           </Link>
         </div>
 
-        {/* Footer */}
         <div className="mt-6 text-center">
           <p className="text-xs text-secondary">
             游客可阅读全部文章，登录后可点赞、评论

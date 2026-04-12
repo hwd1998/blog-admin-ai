@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 
 interface MediaFile {
   name: string
@@ -27,34 +26,17 @@ export default function AdminMediaPage() {
   const [uploading, setUploading] = useState(false)
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const supabase = createClient()
 
   const fetchFiles = async () => {
     setLoading(true)
-    const { data, error: listError } = await supabase.storage.from('media').list('', {
-      limit: 100,
-      sortBy: { column: 'created_at', order: 'desc' },
-    })
-
-    if (listError) {
-      setError(listError.message)
+    const res = await fetch('/api/admin/media')
+    if (!res.ok) {
+      setError('加载失败')
       setLoading(false)
       return
     }
-
-    const filesWithUrls: MediaFile[] = (data ?? [])
-      .filter((f) => f.name !== '.emptyFolderPlaceholder')
-      .map((f) => {
-        const { data: urlData } = supabase.storage.from('media').getPublicUrl(f.name)
-        return {
-          ...f,
-          id: f.id ?? '',
-          publicUrl: urlData.publicUrl,
-          metadata: f.metadata ?? { size: 0, mimetype: 'unknown' },
-        }
-      })
-
-    setFiles(filesWithUrls)
+    const data = (await res.json()) as { files?: MediaFile[] }
+    setFiles(data.files ?? [])
     setLoading(false)
   }
 
@@ -79,15 +61,13 @@ export default function AdminMediaPage() {
     setUploading(true)
     setError(null)
 
-    const ext = file.name.split('.').pop()
-    const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+    const formData = new FormData()
+    formData.append('file', file)
 
-    const { error: uploadError } = await supabase.storage
-      .from('media')
-      .upload(fileName, file)
-
-    if (uploadError) {
-      setError(uploadError.message)
+    const res = await fetch('/api/upload', { method: 'POST', body: formData })
+    if (!res.ok) {
+      const j = (await res.json()) as { error?: string }
+      setError(j.error ?? 'Upload failed')
     } else {
       await fetchFiles()
     }
@@ -97,16 +77,20 @@ export default function AdminMediaPage() {
   }
 
   const copyUrl = (url: string, id: string) => {
-    navigator.clipboard.writeText(url)
+    void navigator.clipboard.writeText(
+      typeof window !== 'undefined' ? `${window.location.origin}${url}` : url
+    )
     setCopiedId(id)
     setTimeout(() => setCopiedId(null), 2000)
   }
 
   const deleteFile = async (name: string) => {
     if (!confirm(`Delete "${name}"? This cannot be undone.`)) return
-    const { error: delError } = await supabase.storage.from('media').remove([name])
-    if (delError) {
-      setError(delError.message)
+    const res = await fetch(`/api/admin/media?name=${encodeURIComponent(name)}`, {
+      method: 'DELETE',
+    })
+    if (!res.ok) {
+      setError('Delete failed')
     } else {
       await fetchFiles()
     }
@@ -114,7 +98,6 @@ export default function AdminMediaPage() {
 
   return (
     <div className="p-8">
-      {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-semibold text-[#1A1A1A] mb-1">媒体库</h1>
@@ -136,7 +119,7 @@ export default function AdminMediaPage() {
       {error && (
         <div className="mb-6 p-3 bg-red-50 border border-red-200 text-red-700 text-sm">
           {error}
-          <button onClick={() => setError(null)} className="ml-2 text-red-400 hover:text-red-600">✕</button>
+          <button type="button" onClick={() => setError(null)} className="ml-2 text-red-400 hover:text-red-600">✕</button>
         </div>
       )}
 
@@ -155,7 +138,6 @@ export default function AdminMediaPage() {
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6 gap-4">
           {files.map((file) => (
             <div key={file.id ?? file.name} className="group relative bg-white border border-stone-200 overflow-hidden">
-              {/* Image preview */}
               <div className="aspect-square bg-stone-100 overflow-hidden">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -168,9 +150,9 @@ export default function AdminMediaPage() {
                 />
               </div>
 
-              {/* Overlay actions */}
               <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
                 <button
+                  type="button"
                   onClick={() => copyUrl(file.publicUrl, file.id ?? file.name)}
                   className="flex items-center gap-1 px-2.5 py-1.5 bg-white text-[#1A1A1A] text-xs font-medium hover:bg-stone-100 transition-colors"
                   title="Copy URL"
@@ -181,6 +163,7 @@ export default function AdminMediaPage() {
                   {copiedId === (file.id ?? file.name) ? 'Copied!' : 'Copy URL'}
                 </button>
                 <button
+                  type="button"
                   onClick={() => deleteFile(file.name)}
                   className="flex items-center gap-1 px-2.5 py-1.5 bg-red-600 text-white text-xs font-medium hover:bg-red-700 transition-colors"
                   title="Delete"
@@ -190,12 +173,11 @@ export default function AdminMediaPage() {
                 </button>
               </div>
 
-              {/* File info */}
               <div className="px-2 py-1.5 border-t border-stone-100">
                 <p className="text-xs text-stone-600 truncate" title={file.name}>{file.name}</p>
-                {file.metadata?.size && (
+                {file.metadata?.size ? (
                   <p className="text-xs text-stone-400">{formatFileSize(file.metadata.size)}</p>
-                )}
+                ) : null}
               </div>
             </div>
           ))}

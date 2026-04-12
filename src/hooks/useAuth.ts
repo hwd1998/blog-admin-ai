@@ -1,35 +1,33 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
-import type { User } from '@supabase/supabase-js'
+import { useSession, signOut } from 'next-auth/react'
+
+export interface AuthUser {
+  id: string
+  email?: string | null
+  name?: string | null
+}
 
 interface UseAuthReturn {
-  user: User | null
+  user: AuthUser | null
   loading: boolean
   isAuthor: boolean
   signOut: () => Promise<void>
 }
 
 export function useAuth(): UseAuthReturn {
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
+  const { data: session, status } = useSession()
+  const loading = status === 'loading'
   const [isAuthor, setIsAuthor] = useState(false)
-  const supabase = createClient()
 
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setUser(user)
-      setLoading(false)
-    })
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
-      setLoading(false)
-    })
-
-    return () => subscription.unsubscribe()
-  }, [])
+  const user: AuthUser | null = session?.user?.id
+    ? {
+        id: session.user.id,
+        email: session.user.email,
+        name: session.user.name,
+      }
+    : null
 
   useEffect(() => {
     if (!user) {
@@ -50,9 +48,9 @@ export function useAuth(): UseAuthReturn {
     }
   }, [user])
 
-  const signOut = async () => {
-    await supabase.auth.signOut()
+  const handleSignOut = async () => {
+    await signOut({ callbackUrl: '/' })
   }
 
-  return { user, loading, isAuthor, signOut }
+  return { user, loading, isAuthor, signOut: handleSignOut }
 }

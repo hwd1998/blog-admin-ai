@@ -47,6 +47,8 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
   if (!rawArticle) notFound()
 
   const article = toArticleDTO(rawArticle)
+  const categories = article.categories ?? []
+  const tags = article.tags ?? []
 
   const likeCount = await countLikesForArticle(article.id)
   incrementArticleViewCount(slug).then(() => {})
@@ -61,13 +63,13 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
       <nav className="flex items-center gap-2 text-xs text-secondary mb-8 font-mono">
         <Link href="/" className="hover:text-primary transition-colors">首页</Link>
         <span className="text-outline-variant">/</span>
-        {article.categories?.[0] && (
+        {categories[0] && (
           <>
             <Link
-              href={`/categories/${article.categories[0].slug}`}
+              href={`/categories/${categories[0].slug}`}
               className="hover:text-primary transition-colors"
             >
-              {article.categories[0].name}
+              {categories[0].name}
             </Link>
             <span className="text-outline-variant">/</span>
           </>
@@ -78,9 +80,9 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
       <div className="flex gap-10">
         <article className="flex-1 min-w-0">
           <header className="mb-8">
-            {article.categories.length > 0 && (
+            {categories.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-3">
-                {article.categories.map((cat: Category) => (
+                {categories.map((cat: Category) => (
                   <Link
                     key={cat.id}
                     href={`/categories/${cat.slug}`}
@@ -134,9 +136,9 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
 
           <ArticleContent content={displayHtml} />
 
-          {article.tags.length > 0 && (
+          {tags.length > 0 && (
             <div className="mt-8 flex flex-wrap gap-2 pt-6 border-t border-outline-variant">
-              {article.tags.map((tag: Tag) => (
+              {tags.map((tag: Tag) => (
                 <Link
                   key={tag.id}
                   href={`/tags/${tag.slug}`}

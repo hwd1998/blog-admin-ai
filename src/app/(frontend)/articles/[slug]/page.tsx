@@ -61,7 +61,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
       <nav className="flex items-center gap-2 text-xs text-secondary mb-8 font-mono">
         <Link href="/" className="hover:text-primary transition-colors">首页</Link>
         <span className="text-outline-variant">/</span>
-        {article.categories[0] && (
+        {article.categories?.[0] && (
           <>
             <Link
               href={`/categories/${article.categories[0].slug}`}

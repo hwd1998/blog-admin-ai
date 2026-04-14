@@ -15,6 +15,7 @@ model User {
   createdAt    DateTime @default(now()) @map("created_at")
 
   articles  Article[]
+  tutorials Tutorial[]
   comments  Comment[]
   likes     Like[]
   favorites Favorite[]
@@ -29,7 +30,8 @@ model Category {
   description String?  @db.Text
   createdAt   DateTime @default(now()) @map("created_at")
 
-  articleCategories ArticleCategory[]
+  articleCategories  ArticleCategory[]
+  tutorialCategories TutorialCategory[]
 
   @@map("categories")
 }
@@ -136,4 +138,51 @@ model Favorite {
 
   @@unique([articleId, userId])
   @@map("favorites")
+}
+
+model Tutorial {
+  id            String    @id @default(uuid()) @db.VarChar(36)
+  title         String    @db.VarChar(500)
+  slug          String    @unique @db.VarChar(500)
+  summary       String?   @db.Text
+  coverImageUrl String?   @map("cover_image_url") @db.VarChar(2048)
+  status        String    @db.VarChar(16)
+  authorId      String    @map("author_id") @db.VarChar(36)
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  publishedAt   DateTime? @map("published_at")
+
+  author             User               @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  steps              TutorialStep[]
+  tutorialCategories TutorialCategory[]
+
+  @@index([status])
+  @@index([authorId])
+  @@map("tutorials")
+}
+
+model TutorialStep {
+  id          String  @id @default(uuid()) @db.VarChar(36)
+  tutorialId  String  @map("tutorial_id") @db.VarChar(36)
+  stepNumber  Int     @map("step_number")
+  title       String? @db.VarChar(500)
+  content     String  @db.LongText
+  contentFormat String @default("html") @map("content_format") @db.VarChar(16)
+  imageUrl    String? @map("image_url") @db.VarChar(2048)
+
+  tutorial Tutorial @relation(fields: [tutorialId], references: [id], onDelete: Cascade)
+
+  @@index([tutorialId, stepNumber])
+  @@map("tutorial_steps")
+}
+
+model TutorialCategory {
+  tutorialId String @map("tutorial_id") @db.VarChar(36)
+  categoryId String @map("category_id") @db.VarChar(36)
+
+  tutorial Tutorial @relation(fields: [tutorialId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([tutorialId, categoryId])
+  @@map("tutorial_categories")
 }

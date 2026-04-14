@@ -7,6 +7,7 @@ import { signOut } from 'next-auth/react'
 const navItems = [
   { href: '/admin', label: '概览', icon: 'dashboard' },
   { href: '/admin/articles', label: '文章', icon: 'article' },
+  { href: '/admin/tutorials', label: '教程', icon: 'school' },
   { href: '/admin/categories', label: '分类标签', icon: 'label' },
   { href: '/admin/comments', label: '评论', icon: 'chat' },
   { href: '/admin/media', label: '媒体库', icon: 'photo_library' },

@@ -212,4 +212,4 @@ npm run dev
 | `npx prisma db push` | 同步数据库 schema |
 | `npx prisma db push --force-reset` | 重置数据库（清空所有数据） |
 | `npx tsx prisma/seed.ts` | 创建初始作者账号 |
-| `npx prisma studio` | 可视化数据库管理界面 |
+| `/root/deploy.sh` | 服务端构建脚本 |

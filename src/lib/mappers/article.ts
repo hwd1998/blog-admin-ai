@@ -31,7 +31,7 @@ export function toArticleDTO(row: ArticleWithRelations): Article {
     summary: row.summary,
     content: row.content,
     content_format: row.contentFormat === 'markdown' ? 'markdown' : 'html',
-    cover_image_url: row.coverImageUrl,
+    cover_image_url: row.coverImageUrl?.trim() || null,
     status: row.status as Article['status'],
     view_count: row.viewCount,
     author_id: row.authorId,

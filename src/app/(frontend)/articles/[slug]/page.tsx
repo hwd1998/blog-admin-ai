@@ -1,5 +1,4 @@
 import { notFound } from 'next/navigation'
-import Image from 'next/image'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import {
@@ -123,13 +122,17 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
 
           {article.cover_image_url && (
             <div className="mb-8 border border-outline-variant overflow-hidden">
-              <Image
+              {/* 封面为任意外链 URL，与后台/列表一致使用原生 img，避免 next/image 未放行域名与图床对优化请求的拦截 */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
                 src={article.cover_image_url}
                 alt={article.title}
                 width={900}
                 height={450}
                 className="w-full h-auto object-cover"
-                priority
+                loading="eager"
+                decoding="async"
+                referrerPolicy="no-referrer"
               />
             </div>
           )}

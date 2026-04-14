@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuthorSession } from '@/lib/auth-helpers'
+import { revalidateArticleRelatedPaths } from '@/lib/revalidateArticleRoutes'
 
 function serializeArticle(a: {
   id: string
@@ -90,6 +91,20 @@ export async function PUT(
 
   const status = body.status === 'published' ? 'published' : 'draft'
 
+  const coverUrl =
+    typeof body.cover_image_url === 'string'
+      ? body.cover_image_url.trim() || null
+      : body.cover_image_url ?? null
+
+  const before = await prisma.article.findUnique({
+    where: { id },
+    select: {
+      slug: true,
+      articleCategories: { select: { categoryId: true } },
+      articleTags: { select: { tagId: true } },
+    },
+  })
+
   try {
     await prisma.$transaction(async (tx) => {
       const existing = await tx.article.findUnique({ where: { id } })
@@ -108,7 +123,7 @@ export async function PUT(
           summary: body.summary?.trim() || null,
           content: body.content ?? '',
           contentFormat: body.content_format === 'markdown' ? 'markdown' : 'html',
-          coverImageUrl: body.cover_image_url || null,
+          coverImageUrl: coverUrl,
           status,
           publishedAt,
         },
@@ -130,6 +145,18 @@ export async function PUT(
           data: tagIds.map((tagId) => ({ articleId: id, tagId })),
         })
       }
+    })
+
+    const newSlug = body.slug!.trim()
+    const catIds = body.categoryIds ?? []
+    const tagIds = body.tagIds ?? []
+    await revalidateArticleRelatedPaths({
+      slug: newSlug,
+      previousSlug: before?.slug ?? null,
+      categoryIds: catIds,
+      prevCategoryIds: before?.articleCategories.map((ac) => ac.categoryId),
+      tagIds: tagIds,
+      prevTagIds: before?.articleTags.map((at) => at.tagId),
     })
 
     return NextResponse.json({ ok: true })
@@ -165,6 +192,15 @@ export async function PATCH(
         : new Date()
       : null
 
+  const before = await prisma.article.findUnique({
+    where: { id },
+    select: {
+      slug: true,
+      articleCategories: { select: { categoryId: true } },
+      articleTags: { select: { tagId: true } },
+    },
+  })
+
   await prisma.article.update({
     where: { id },
     data: {
@@ -172,6 +208,14 @@ export async function PATCH(
       publishedAt: body.status === 'published' ? publishedAt : null,
     },
   })
+
+  if (before) {
+    await revalidateArticleRelatedPaths({
+      slug: before.slug,
+      categoryIds: before.articleCategories.map((ac) => ac.categoryId),
+      tagIds: before.articleTags.map((at) => at.tagId),
+    })
+  }
 
   return NextResponse.json({ ok: true })
 }
@@ -186,6 +230,28 @@ export async function DELETE(
   }
 
   const { id } = await params
+
+  const before = await prisma.article.findUnique({
+    where: { id },
+    select: {
+      slug: true,
+      articleCategories: { select: { categoryId: true } },
+      articleTags: { select: { tagId: true } },
+    },
+  })
+  if (!before) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
+
   await prisma.article.delete({ where: { id } })
+
+  await revalidateArticleRelatedPaths({
+    slug: before.slug,
+    categoryIds: [],
+    prevCategoryIds: before.articleCategories.map((ac) => ac.categoryId),
+    tagIds: [],
+    prevTagIds: before.articleTags.map((at) => at.tagId),
+  })
+
   return NextResponse.json({ ok: true })
 }

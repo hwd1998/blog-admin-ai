@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireSessionUser } from '@/lib/auth-helpers'
+import { revalidateArticleRelatedPaths } from '@/lib/revalidateArticleRoutes'
 
 export async function POST(request: Request) {
   const user = await requireSessionUser()
@@ -33,6 +34,11 @@ export async function POST(request: Request) {
         : new Date()
       : null
 
+  const coverUrl =
+    typeof body.cover_image_url === 'string'
+      ? body.cover_image_url.trim() || null
+      : body.cover_image_url ?? null
+
   try {
     const article = await prisma.$transaction(async (tx) => {
       const a = await tx.article.create({
@@ -42,7 +48,7 @@ export async function POST(request: Request) {
           summary: body.summary?.trim() || null,
           content: body.content ?? '',
           contentFormat: body.content_format === 'markdown' ? 'markdown' : 'html',
-          coverImageUrl: body.cover_image_url || null,
+          coverImageUrl: coverUrl,
           status,
           authorId: user.id,
           publishedAt,
@@ -64,6 +70,14 @@ export async function POST(request: Request) {
       }
 
       return a
+    })
+
+    const catIds = body.categoryIds ?? []
+    const tagIds = body.tagIds ?? []
+    await revalidateArticleRelatedPaths({
+      slug: article.slug,
+      categoryIds: catIds,
+      tagIds: tagIds,
     })
 
     return NextResponse.json({ article: { id: article.id } })

@@ -1,34 +1,33 @@
 import Link from 'next/link'
 import type { Article } from '@/types'
 import { formatDate, truncate } from '@/lib/utils'
+import defaultCover from '@/assets/default_cover_blog.png'
 
 interface ArticleCardProps {
   article: Article
 }
 
 export default function ArticleCard({ article }: ArticleCardProps) {
+  const coverImageUrl = article.cover_image_url || defaultCover.src
+
   return (
     <article className="border-b border-outline-variant py-6 last:border-b-0 group">
       <div className="flex gap-5">
         {/* Cover image - 左侧，更大更醒目 */}
-        {article.cover_image_url ? (
-          <Link 
-            href={`/articles/${article.slug}`} 
-            className="flex-shrink-0 hidden sm:block"
-          >
-            <div className="w-44 h-32 overflow-hidden border border-outline-variant">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={article.cover_image_url}
-                alt={article.title}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-              />
-            </div>
-          </Link>
-        ) : (
-          /* 无封面时占位 */
-          <div className="flex-shrink-0 hidden sm:block w-44 h-32 bg-surface-container border border-outline-variant" />
-        )}
+        <Link 
+          href={`/articles/${article.slug}`} 
+          className="flex-shrink-0 hidden sm:block"
+        >
+          <div className="w-44 h-32 overflow-hidden border border-outline-variant">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={coverImageUrl}
+              alt={article.title}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              referrerPolicy="no-referrer"
+            />
+          </div>
+        </Link>
 
         {/* Content - 右侧 */}
         <div className="flex-1 min-w-0 flex flex-col justify-between">

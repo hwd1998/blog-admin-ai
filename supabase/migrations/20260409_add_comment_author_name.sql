@@ -1,3 +1,0 @@
-ALTER TABLE comments
-ADD COLUMN IF NOT EXISTS author_name TEXT;
-

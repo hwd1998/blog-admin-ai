@@ -27,7 +27,7 @@
 
 **示例：**
 ```bash
-curl -X POST https://yourdomain.com/api/open/auth/token \
+curl -X POST http://39.105.200.95/api/open/auth/token \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@example.com","password":"yourpassword"}'
 ```
@@ -73,7 +73,7 @@ Authorization: Bearer <token>
 
 **示例：**
 ```bash
-curl https://yourdomain.com/api/open/articles?page=1&page_size=10 \
+curl https://39.105.200.95/api/open/articles?page=1&page_size=10 \
   -H "Authorization: Bearer eyJ..."
 ```
 
@@ -119,7 +119,7 @@ Authorization: Bearer <token>
 
 **示例：**
 ```bash
-curl https://yourdomain.com/api/open/articles/my-article-slug \
+curl https://39.105.200.95/api/open/articles/my-article-slug \
   -H "Authorization: Bearer eyJ..."
 ```
 

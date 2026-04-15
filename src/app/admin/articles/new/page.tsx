@@ -62,11 +62,11 @@ export default function NewArticlePage() {
 
   const handleSave = async (saveStatus: 'draft' | 'published' = status) => {
     if (!title.trim()) {
-      setError('Title is required.')
+      setError('标题不能为空')
       return
     }
     if (!slug.trim()) {
-      setError('Slug is required.')
+      setError('链接标识不能为空')
       return
     }
 
@@ -114,23 +114,22 @@ export default function NewArticlePage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-semibold text-[#1A1A1A] mb-1">New Article</h1>
-          <p className="text-sm text-stone-500">Create a new editorial piece</p>
+          <h1 className="text-2xl font-semibold text-[#1A1A1A] mb-1"> New Article</h1>
+          <p className="text-sm text-stone-500">创建新文章</p>
         </div>
         <div className="flex items-center gap-3">
           <button
-            onClick={() => handleSave('draft')}
-            disabled={saving}
-            className="px-4 py-2 border border-stone-300 text-stone-700 text-sm font-medium hover:bg-stone-100 transition-colors disabled:opacity-50"
+            onClick={() => router.push('/admin/articles')}
+            className="px-4 py-2 border border-stone-300 text-stone-600 text-sm hover:bg-stone-100 transition-colors"
           >
-            Save Draft
+            取消
           </button>
           <button
-            onClick={() => handleSave('published')}
+            onClick={() => handleSave()}
             disabled={saving}
             className="px-4 py-2 bg-amber-500 text-white text-sm font-medium hover:bg-amber-600 transition-colors disabled:opacity-50"
           >
-            {saving ? 'Saving...' : 'Publish'}
+            {saving ? '保存中...' : '提交'}
           </button>
         </div>
       </div>
@@ -150,7 +149,7 @@ export default function NewArticlePage() {
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Article Title"
+              placeholder="文章标题"
               className="w-full px-0 py-2 bg-transparent border-b-2 border-stone-300 focus:border-amber-500 text-[#1A1A1A] text-2xl font-semibold font-serif placeholder:text-stone-400 focus:outline-none transition-colors"
             />
           </div>
@@ -160,7 +159,7 @@ export default function NewArticlePage() {
             <textarea
               value={summary}
               onChange={(e) => setSummary(e.target.value)}
-              placeholder="Brief summary or subtitle..."
+              placeholder="简介或副标题..."
               rows={2}
               className="w-full px-0 py-2 bg-transparent border-b border-stone-200 focus:border-amber-400 text-stone-600 text-base placeholder:text-stone-400 focus:outline-none transition-colors resize-none"
             />
@@ -207,19 +206,19 @@ export default function NewArticlePage() {
         <div className="w-64 shrink-0 space-y-5">
           {/* Status */}
           <div className="bg-white border border-stone-200 p-4">
-            <h3 className="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-3">Status</h3>
+            <h3 className="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-3">状态</h3>
             <div className="flex gap-2">
               {(['draft', 'published'] as const).map((s) => (
                 <button
                   key={s}
                   onClick={() => setStatus(s)}
-                  className={`flex-1 py-1.5 text-xs font-medium border transition-colors capitalize ${
+                  className={`flex-1 py-1.5 text-xs font-medium border transition-colors ${
                     status === s
                       ? 'bg-amber-500 border-amber-500 text-white'
                       : 'border-stone-200 text-stone-600 hover:bg-stone-50'
                   }`}
                 >
-                  {s}
+                  {s === 'draft' ? '草稿' : '已发布'}
                 </button>
               ))}
             </div>
@@ -227,7 +226,7 @@ export default function NewArticlePage() {
 
           {/* Slug */}
           <div className="bg-white border border-stone-200 p-4">
-            <h3 className="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-2">Slug</h3>
+            <h3 className="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-2">链接标识</h3>
             <input
               type="text"
               value={slug}
@@ -242,7 +241,7 @@ export default function NewArticlePage() {
 
           {/* Cover image */}
           <div className="bg-white border border-stone-200 p-4">
-            <h3 className="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-3">Cover Image</h3>
+            <h3 className="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-3">封面图片</h3>
             {coverImageUrl ? (
               <div className="mb-3">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -251,14 +250,14 @@ export default function NewArticlePage() {
                   onClick={() => setCoverImageUrl('')}
                   className="mt-1 text-xs text-red-600 hover:text-red-800 transition-colors"
                 >
-                  Remove
+                  移除
                 </button>
               </div>
             ) : null}
             <div className="space-y-2">
-              <ImageUpload onUpload={setCoverImageUrl} label="Upload Cover" />
+              <ImageUpload onUpload={setCoverImageUrl} label="上传封面" />
               <div className="flex items-center gap-1 text-xs text-stone-400">
-                <span>or paste URL:</span>
+                <span>或粘贴链接：</span>
               </div>
               <input
                 type="url"
@@ -272,9 +271,9 @@ export default function NewArticlePage() {
 
           {/* Categories */}
           <div className="bg-white border border-stone-200 p-4">
-            <h3 className="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-3">Categories</h3>
+            <h3 className="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-3">分类</h3>
             {categories.length === 0 ? (
-              <p className="text-xs text-stone-400">No categories yet.</p>
+              <p className="text-xs text-stone-400">暂无分类</p>
             ) : (
               <div className="space-y-1.5">
                 {categories.map((cat) => (
@@ -294,9 +293,9 @@ export default function NewArticlePage() {
 
           {/* Tags */}
           <div className="bg-white border border-stone-200 p-4">
-            <h3 className="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-3">Tags</h3>
+            <h3 className="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-3">标签</h3>
             {tags.length === 0 ? (
-              <p className="text-xs text-stone-400">No tags yet.</p>
+              <p className="text-xs text-stone-400">暂无标签</p>
             ) : (
               <div className="flex flex-wrap gap-1.5">
                 {tags.map((tag) => (

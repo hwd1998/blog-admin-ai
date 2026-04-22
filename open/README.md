@@ -53,7 +53,61 @@ curl -X POST http://39.105.200.95/api/open/auth/token \
 
 ---
 
-### 2. 获取文章列表
+### 2. 创建文章
+
+**`POST /api/open/articles`**
+
+**请求 Header：**
+```
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+**Request Body（JSON）：**
+
+| 字段               | 类型     | 必填 | 说明                                    |
+| ------------------ | -------- | ---- | --------------------------------------- |
+| `title`            | string   | 是   | 文章标题                                |
+| `slug`             | string   | 是   | URL 唯一标识，全局唯一                  |
+| `summary`          | string   | 否   | 文章摘要                                |
+| `content`          | string   | 否   | 文章正文（默认为空字符串）              |
+| `content_format`   | string   | 否   | `"html"`（默认）或 `"markdown"`         |
+| `cover_image_url`  | string   | 否   | 封面图片 URL                            |
+| `status`           | string   | 否   | `"draft"`（默认）或 `"published"`       |
+| `published_at`     | string   | 否   | 发布时间（ISO 8601），仅 published 生效 |
+| `categoryIds`      | string[] | 否   | 分类 ID 数组                            |
+| `tagIds`           | string[] | 否   | 标签 ID 数组                            |
+
+**示例：**
+```bash
+curl -X POST http://39.105.200.95/api/open/articles \
+  -H "Authorization: Bearer eyJ..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "我的新文章",
+    "slug": "my-new-article",
+    "summary": "这是摘要",
+    "content": "<p>正文内容</p>",
+    "content_format": "html",
+    "status": "published"
+  }'
+```
+
+**成功响应（200）：**
+```json
+{ "article": { "id": "uuid" } }
+```
+
+**失败响应：**
+```json
+{ "error": "title and slug required" }  // 400
+{ "error": "Unauthorized" }             // 401
+{ "error": "Unique constraint failed" } // 400（slug 重复等数据库错误）
+```
+
+---
+
+### 3. 获取文章列表（分页）
 
 **`GET /api/open/articles`**
 
@@ -108,7 +162,7 @@ curl https://39.105.200.95/api/open/articles?page=1&page_size=10 \
 
 ---
 
-### 3. 获取文章详情
+### 4. 获取文章详情
 
 **`GET /api/open/articles/:slug`**
 

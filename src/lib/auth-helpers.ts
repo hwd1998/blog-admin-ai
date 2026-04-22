@@ -8,7 +8,7 @@ export async function getSession() {
 /** 博主：与 middleware 规则一致 */
 export function sessionIsAuthor(userId: string): boolean {
   const authorUid = process.env.AUTHOR_UID?.trim()
-  if (!authorUid) return true
+  if (!authorUid) return false
   return userId === authorUid
 }
 

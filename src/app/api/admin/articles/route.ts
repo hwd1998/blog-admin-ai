@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requireSessionUser } from '@/lib/auth-helpers'
+import { requireAuthorSession } from '@/lib/auth-helpers'
 import { revalidateArticleRelatedPaths } from '@/lib/revalidateArticleRoutes'
 
 export async function POST(request: Request) {
-  const user = await requireSessionUser()
+  const user = await requireAuthorSession()
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
